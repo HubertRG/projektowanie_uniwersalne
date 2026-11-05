@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0, user-scalable=no">
+  <title>Infomat Galeria Handlowa - Test Eyetracker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="kiosk-app">
+    <!-- PEŁNOEKRANOWY VIEWPORT MAPY (MAPA ZAJMUJE CAŁY EKRAN I MOŻE WJEŻDŻAĆ POD PRZYCISKI) -->
+    <div id="map-viewport" data-aoi="map_container">
+      <div id="map-stage">
+        <!-- CIEMNOSZARA BRYŁA GALERII -->
+        <div id="building-base">
+          <!-- WARSTWA KORYTARZA (EDYTOWALNA PRZEZ CSS / PROSTY SHAPE) -->
+          <div id="corridor-layer" class="corridor-layer"></div>
+
+          <!-- SIATKA SKLEPÓW (PUZZLE) -->
+          <div id="stores-puzzle-grid" class="puzzle-grid"></div>
+
+          <!-- PUNKTY INFRASTRUKTURY NA MAPIE -->
+          <div id="map-amenities-layer" class="amenities-layer"></div>
+
+          <!-- WARSTWA SVG DLA TRAS -->
+          <svg id="nav-path-svg" class="nav-overlay" viewBox="0 0 1000 700">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#D32F2F" />
+              </marker>
+            </defs>
+            <path id="route-line" d="" fill="none" stroke="#D32F2F" stroke-width="6" stroke-dasharray="10 8" />
+          </svg>
+
+          <!-- PINEZKA INFOMATU (TYLKO PIĘTRO 1, CENTRUM) -->
+          <div id="you-are-here-pin" class="infomat-pin" data-aoi="you_are_here_pin">
+            <div class="pin-marker">
+              <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
+            <div class="pin-text">TU JESTEŚ (INFOMAT)</div>
+          </div>
+
+          <!-- PŁYWAJĄCA CHMURKA AKCJI PO KLIKNIĘCIU SKLEPU -->
+          <div id="store-action-bubble" class="action-bubble hidden" data-aoi="store_actions_bubble">
+            <span id="bubble-store-name" class="bubble-title">Sklep</span>
+            <div class="bubble-buttons">
+              <button id="btn-show-route" class="bubble-btn" data-aoi="btn_bubble_route">Pokaż drogę</button>
+              <button id="btn-show-modal" class="bubble-btn" data-aoi="btn_bubble_info">O sklepie</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PŁYWAJĄCY PRZYCISK "OK" PODCZAS AKTYWNEJ TRASY -->
+    <div id="route-dismiss-container" class="route-dismiss-box hidden" data-aoi="route_dismiss_box">
+      <button id="btn-route-ok" class="route-ok-btn" data-aoi="btn_route_ok">
+        <span class="ok-check">✓</span>
+        <span class="ok-label">OK — ZAMKNIJ TRASĘ</span>
+      </button>
+    </div>
+
+    <!-- PŁYWAJĄCY BANER PRZEJŚCIA MIĘDZY PIĘTRAMI -->
+    <div id="route-floor-banner" class="route-banner hidden">
+      <span class="route-banner-icon">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3v4h-4v4h-4v4H7v4H3v2h6v-4h4v-4h4v-4h4V3h-2z"/></svg>
+      </span>
+      <span id="route-banner-text">Trasa do ruchomych schodów...</span>
+    </div>
+
+    <!-- ========================================================
+         "WISZĄCE" KONTROLKI INTERFEJSU (PRZEZROCZYSTE TŁO SEKCJI,
+         BIAŁE PRZYCISKI Z CIEMNOFIOLETOWĄ RAMKĄ NA JASNOSZARYM TLE)
+         ======================================================== -->
+
+    <!-- GÓRNY PASEK (WISZĄCY NAD MAPĄ) -->
+    <header id="top-header" data-aoi="header_bar">
+      <div class="header-left floating-card" data-aoi="mall_info">
+        <h1 class="mall-title">GALERIA HANDLOWA</h1>
+        <p class="mall-hours">Pon. – Sob.: 09:00 – 21:00 | Nd. handlowe: 10:00 – 20:00</p>
+      </div>
+
+      <nav class="top-nav" data-aoi="top_navigation">
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_sklepy" data-screen="ekran_sklepy">
+          <span class="icon">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12zm-7-8c-1.66 0-3-1.34-3-3H7c0 2.76 2.24 5 5 5s5-2.24 5-5h-2c0 1.66-1.34 3-3 3z"/></svg>
+          </span>
+          <span class="label">SKLEPY</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_gastro" data-screen="ekran_restauracje">
+          <span class="icon">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
+          </span>
+          <span class="label">RESTAURACJE<br>I KAWIARNIE</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_fitness" data-screen="ekran_fitness">
+          <span class="icon">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>
+          </span>
+          <span class="label">KLUB<br>FITNESS</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_uslugi" data-screen="ekran_uslugi">
+          <span class="icon">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+          </span>
+          <span class="label">USŁUGI</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_kino" data-screen="ekran_kino">
+          <span class="icon">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+          </span>
+          <span class="label">REPERTUAR<br>KINA</span>
+        </button>
+        <button class="nav-btn top-square-btn search-btn" data-aoi="btn_top_szukaj" data-screen="ekran_szukaj">
+          <span class="icon">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </span>
+          <span class="label">SZUKAJ</span>
+        </button>
+      </nav>
+
+      <div class="header-right floating-card" data-aoi="clock_widget">
+        <div id="live-time" class="time-display">12:00:00</div>
+        <div id="live-date" class="date-display">Czwartek, 5 listopada 2026</div>
+      </div>
+    </header>
+
+    <!-- LEWY PANEL (WISZĄCY NAD MAPĄ) -->
+    <aside id="side-nav-left" class="side-panel-left" data-aoi="side_navigation">
+      <button class="side-btn active" data-aoi="btn_side_plan" data-screen="ekran_plan">
+        <span class="side-icon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+        </span>
+        <span class="side-title">Plan Galerii</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_aktualnosci" data-screen="ekran_aktualnosci">
+        <span class="side-icon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </span>
+        <span class="side-title">Aktualności</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_promocje" data-screen="ekran_promocje">
+        <span class="side-icon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+        </span>
+        <span class="side-title">Promocje</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_komunikacja" data-screen="ekran_komunikacja">
+        <span class="side-icon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
+        </span>
+        <span class="side-title">Komunikacja</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_parking" data-screen="ekran_parking">
+        <span class="side-icon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 9.5c0 .83-.67 1.5-1.5 1.5H10v3H8V7h4.5c.83 0 1.5.67 1.5 1.5v4zm-3-1h1.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H10v1z"/></svg>
+        </span>
+        <span class="side-title">Parking</span>
+      </button>
+    </aside>
+
+    <!-- PRAWY PANEL SYMBOLI (WISZĄCY NAD MAPĄ) -->
+    <aside id="side-symbols-right" class="side-symbols" data-aoi="symbols_legend">
+      <div class="symbol-card" data-aoi="sym_stairs">
+        <div class="symbol-icon">
+          <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M19 3v4h-4v4h-4v4H7v4H3v2h6v-4h4v-4h4v-4h4V3h-2z"/></svg>
+        </div>
+        <span class="symbol-label">Schody<br>ruchome</span>
+      </div>
+      <div class="symbol-card" data-aoi="sym_elevator">
+        <div class="symbol-icon">
+          <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M7 2h10c1.1 0 2 .9 2 2v16c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2zm0 4v14h10V6H7zm3 3l2-2 2 2h-4zm4 6l-2 2-2-2h4z"/></svg>
+        </div>
+        <span class="symbol-label">Winda</span>
+      </div>
+      <div class="symbol-card" data-aoi="sym_wc">
+        <div class="symbol-icon">
+          <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M9 22H7V11c-.55 0-1-.45-1-1V5c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v5c0 .55-.45 1-1 1v11zm9 0h-2V13h-1l-1.5-6h5l-1.5 6h-1v9zm-1.5-16a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM8 3.5A1.5 1.5 0 1 1 8 .5a1.5 1.5 0 0 1 0 3z"/></svg>
+        </div>
+        <span class="symbol-label">Toalety</span>
+      </div>
+      <div class="symbol-card" data-aoi="sym_atm">
+        <div class="symbol-icon">
+          <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M2 4v16h20V4H2zm18 14H4V6h16v12zm-3-8h-3V8h3v2zm-5 4H8v-2h4v2zm-2-4H8V8h2v2zm6 4h-2v-2h2v2z"/></svg>
+        </div>
+        <span class="symbol-label">Bankomat</span>
+      </div>
+      <div class="symbol-card" data-aoi="sym_baby">
+        <div class="symbol-icon">
+          <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-5.5 9c-.8 0-1.5.7-1.5 1.5v6c0 .8.7 1.5 1.5 1.5H8v2h8v-2h1.5c.8 0 1.5-.7 1.5-1.5v-6c0-.8-.7-1.5-1.5-1.5h-11z"/></svg>
+        </div>
+        <span class="symbol-label">Pokój matki<br>z dzieckiem</span>
+      </div>
+      <div class="symbol-card" data-aoi="sym_parking_pay">
+        <div class="symbol-icon">
+          <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 9.5c0 .8-.7 1.5-1.5 1.5H10v3H8V8h3.5c.8 0 1.5.7 1.5 1.5v2zM10 11h1.5c.3 0 .5-.2.5-.5s-.2-.5-.5-.5H10v1z"/></svg>
+        </div>
+        <span class="symbol-label">Automat<br>parkingowy</span>
+      </div>
+    </aside>
+
+    <!-- DOLNY PASEK WYBORU PIĘTRA (WISZĄCY NAD MAPĄ) -->
+    <footer id="bottom-controls" data-aoi="floor_controls">
+      <div class="floor-group">
+        <button class="floor-btn" data-floor="0" data-aoi="btn_floor_0">Piętro 0</button>
+        <button class="floor-btn active" data-floor="1" data-aoi="btn_floor_1">Piętro 1</button>
+        <button class="floor-btn" data-floor="2" data-aoi="btn_floor_2">Piętro 2</button>
+      </div>
+      <button id="btn-where-am-i" class="where-btn" data-aoi="btn_where_am_i">
+        <span class="where-icon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        </span>
+        Gdzie jestem?
+      </button>
+    </footer>
+
+    <!-- OKNO MODALNE ZE SZCZEGÓŁAMI SKLEPU -->
+    <div id="store-modal" class="modal-backdrop hidden" data-aoi="modal_store_details">
+      <div class="modal-window">
+        <header class="modal-header">
+          <h2 id="modal-store-name">Nazwa Sklepu</h2>
+          <button id="btn-close-modal" class="modal-close" data-aoi="btn_close_modal">✕</button>
+        </header>
+        <div class="modal-body">
+          <div class="modal-logo-wrapper">
+            <div id="modal-store-logo" class="modal-logo-box">LOGO</div>
+          </div>
+          <div class="modal-info-list">
+            <p><strong>Kategoria:</strong> <span id="modal-store-cat">Moda</span></p>
+            <p><strong>Lokalizacja:</strong> <span id="modal-store-floor">Poziom 1</span></p>
+            <p><strong>Godziny otwarcia:</strong> 09:00 – 21:00</p>
+            <p><strong>Telefon:</strong> +48 58 777 00 00</p>
+            <p class="modal-desc">Sklep oferuje szeroki asortyment produktów wiodących marek. Lokal w pełni przystosowany dla osób niepełnosprawnych.</p>
+          </div>
+        </div>
+        <footer class="modal-actions">
+          <button id="modal-btn-route" class="kiosk-action-btn" data-aoi="btn_modal_show_route">Nawiguj do sklepu</button>
+          <button id="modal-btn-close-bottom" class="kiosk-action-btn secondary" data-aoi="btn_modal_close">Zamknij</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- EKRANY POZOSTAŁYCH ZAKŁADEK (KONTENER NA PEŁNE WIDOKI ZAKŁADEK) -->
+    <div id="screens-container">
+      <div id="placeholder-screen" class="screen-view hidden" data-aoi="placeholder_screen">
+        <div class="screen-inner-card">
+          <h2 id="placeholder-title">Ekran Informacyjny</h2>
+          <p id="placeholder-desc">Miejsce na implementację docelowego modułu infomatu.</p>
+          <button id="btn-back-to-map" class="kiosk-action-btn" data-aoi="btn_back_to_map">Wróć do planu galerii</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PŁYWAJĄCY PANEL DLA BADACZA (EYETRACKER CSV) -->
+    <div id="researcher-dock">
+      <button id="btn-toggle-researcher" class="dock-btn">🔬 Eyetracker Logger</button>
+      <div id="researcher-menu" class="dock-menu hidden">
+        <h4>Panel Rejestracji GP3 HD</h4>
+        <div class="dock-stats">Zdarzeń: <strong id="log-count">0</strong></div>
+        <button id="btn-export-events" class="exp-btn">💾 Pobierz zdarzenia dotknięć (CSV)</button>
+        <button id="btn-export-aoi" class="exp-btn">📐 Pobierz obszary AOI (CSV)</button>
+        <button id="btn-clear-events" class="exp-btn danger">🗑️ Wyczyść dane sesji</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/stores-data.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

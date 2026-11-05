@@ -1,0 +1,901 @@
+/* ========================================================
+   GŁÓWNE STYLE INFOMATU:
+   - Tło całej aplikacji: jasnoszary odcień (#EDEFF2), dzięki czemu
+     białe przyciski wyraźnie się wyróżniają.
+   - Mapa zajmuje 100% ekranu w tle (#map-viewport).
+   - Kontrolki (góra, lewo, prawo, dół) nie mają własnego tła
+     i "wiszą" nad mapą (pointer-events: none dla kontenerów, auto dla przycisków).
+   - Mapa może swobodnie przesuwać się pod pływającymi przyciskami.
+   ======================================================== */
+
+:root {
+  --primary-purple: #2E0854;
+  --bg-app: #EDEFF2;       /* Jasnoszare tło całego interfejsu */
+  --bg-button: #FFFFFF;    /* Białe tło przycisków */
+  --border-width: 2px;
+  --shadow-dark: rgba(0, 0, 0, 0.45);
+  --building-bg: #27282b;  /* Jednolity ciemnoszary kolor galerii */
+  --store-bg: #EAEAEA;
+  --store-selected: #D32F2F;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-app);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--primary-purple);
+}
+
+#kiosk-app {
+  width: 1920px;
+  height: 1080px;
+  max-width: 100vw;
+  max-height: 100vh;
+  position: relative;
+  background-color: var(--bg-app);
+  overflow: hidden;
+}
+
+/* ========================================================
+   PEŁNOEKRANOWA MAPA (POD SPODEM INTERFEJSU)
+   ======================================================== */
+#map-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+  overflow: hidden;
+  cursor: grab;
+  z-index: 10; /* Mapa pod pływającymi przyciskami */
+}
+
+#map-viewport:active {
+  cursor: grabbing;
+}
+
+#map-stage {
+  width: 1040px;
+  height: 640px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+/* Bryła galerii */
+#building-base {
+  width: 100%;
+  height: 100%;
+  background: var(--building-bg);
+  border: 5px solid #161718;
+  border-radius: 18px;
+  box-shadow: 28px 45px 50px var(--shadow-dark);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Warstwa korytarza */
+.corridor-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Siatka puzzli */
+.puzzle-grid {
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 3px;
+  z-index: 10;
+}
+
+.store-block {
+  background: var(--store-bg);
+  border: 1px solid #bfbfbf;
+  border-radius: 3px;
+  box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.store-block.selected {
+  background: var(--store-selected) !important;
+  border-color: #8B0000 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 16px rgba(211, 47, 47, 0.9) !important;
+  z-index: 25;
+  transform: translateZ(8px);
+}
+
+/* Duże sklepy */
+.store-block.large-store .store-brand-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 2px;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-block.large-store .store-caption {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-transform: uppercase;
+}
+
+/* Małe sklepy (czysty kształt klocka) */
+.store-block.small-store .store-brand-box,
+.store-block.small-store .store-caption {
+  display: none;
+}
+
+.store-block.small-store.selected .store-caption {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  text-transform: uppercase;
+}
+
+.store-block.small-store.selected .store-brand-box {
+  display: flex;
+  background: #FFFFFF;
+  color: #D32F2F;
+  font-size: 10px;
+  font-weight: 900;
+  margin-bottom: 2px;
+}
+
+/* Punkty infrastruktury na mapie */
+.amenities-layer {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.map-facility-marker {
+  position: absolute;
+  transform: translate(-50%, -50%) translateZ(4px);
+  width: 32px;
+  height: 32px;
+  background: var(--bg-button);
+  border: 2px solid var(--primary-purple);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  pointer-events: auto;
+}
+
+.map-facility-marker svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--primary-purple);
+}
+
+.map-facility-marker .marker-label {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(46, 8, 84, 0.9);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Infomat pin */
+.infomat-pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateZ(16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.pin-marker {
+  width: 38px;
+  height: 38px;
+  background: var(--bg-button);
+  border: 3px solid var(--primary-purple);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+}
+
+.pin-marker svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pin-text {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+.nav-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* ========================================================
+   WISZĄCE KONTROLKI INTERFEJSU (PRZEZROCZYSTE KONTENERY)
+   ======================================================== */
+
+/* GÓRNY PASEK */
+#top-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: transparent; /* Brak tła sekcji */
+  border: none;
+  pointer-events: none;   /* Mapa pod spodem reaguje na gesty poza przyciskami */
+  z-index: 100;
+}
+
+.floating-card {
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  pointer-events: auto;
+}
+
+.header-left {
+  padding: 10px 18px;
+}
+
+.header-left .mall-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: var(--primary-purple);
+}
+
+.header-left .mall-hours {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555555;
+  margin-top: 2px;
+}
+
+.top-nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.top-square-btn {
+  width: 96px;
+  height: 86px;
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 4px;
+  transition: all 0.15s ease-in-out;
+}
+
+.top-square-btn .icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  color: var(--primary-purple);
+}
+
+.top-square-btn .icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.top-square-btn .label {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.top-square-btn:active,
+.top-square-btn.active {
+  background: var(--primary-purple) !important;
+  color: #FFFFFF !important;
+}
+
+.top-square-btn:active .icon,
+.top-square-btn.active .icon {
+  color: #FFFFFF !important;
+}
+
+.header-right {
+  padding: 10px 18px;
+  text-align: right;
+  min-width: 210px;
+}
+
+.time-display {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--primary-purple);
+  font-variant-numeric: tabular-nums;
+}
+
+.date-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555555;
+}
+
+/* LEWE MENU BOCZNE (WISZĄCE) */
+.side-panel-left {
+  position: absolute;
+  top: 130px;
+  left: 24px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.side-btn {
+  width: 100%;
+  height: 64px;
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+}
+
+.side-btn .side-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-purple);
+}
+
+.side-btn .side-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.side-btn:active,
+.side-btn.active {
+  background: var(--primary-purple) !important;
+  color: #FFFFFF !important;
+}
+
+.side-btn:active .side-icon,
+.side-btn.active .side-icon {
+  color: #FFFFFF !important;
+}
+
+/* PRAWY PANEL SYMBOLI (WISZĄCY) */
+.side-symbols {
+  position: absolute;
+  top: 130px;
+  right: 24px;
+  width: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.symbol-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.symbol-icon {
+  width: 50px;
+  height: 50px;
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-button);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  margin-bottom: 4px;
+  transition: transform 0.15s ease;
+}
+
+.symbol-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.symbol-card:active .symbol-icon {
+  transform: scale(0.92);
+}
+
+.symbol-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary-purple);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* DOLNE STEROWANIE PIĘTRAMI (WISZĄCE) */
+#bottom-controls {
+  position: absolute;
+  bottom: 24px;
+  left: 240px;
+  right: 140px;
+  height: 64px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.floor-group {
+  display: flex;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+.floor-btn, .where-btn {
+  height: 54px;
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  font-size: 16px;
+  font-weight: 800;
+  padding: 0 28px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+}
+
+.where-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.where-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.floor-btn:active,
+.floor-btn.active,
+.where-btn:active {
+  background: var(--primary-purple) !important;
+  color: #FFFFFF !important;
+}
+
+/* ========================================================
+   PRZYCISK "OK" DLA TRASY NAWIGACJI
+   ======================================================== */
+.route-dismiss-box {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 150;
+  animation: bounceIn 0.3s ease-out;
+}
+
+.route-dismiss-box.hidden {
+  display: none !important;
+}
+
+.route-ok-btn {
+  height: 58px;
+  padding: 0 32px;
+  background: var(--bg-button);
+  border: 3px solid var(--primary-purple);
+  border-radius: 29px;
+  color: var(--primary-purple);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 25px rgba(46, 8, 84, 0.35);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.route-ok-btn .ok-check {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.route-ok-btn:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  transform: scale(0.96);
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* BANER MIĘDZYPIĘTROWY */
+.route-banner {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  border: 2px solid #FFFFFF;
+  border-radius: 30px;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  z-index: 120;
+}
+
+.route-banner.hidden {
+  display: none !important;
+}
+
+.route-banner-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* CHMURKA AKCJI */
+.action-bubble {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateZ(40px);
+  background: var(--bg-button);
+  border: 3px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 80;
+}
+
+.action-bubble.hidden {
+  display: none !important;
+}
+
+.bubble-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--primary-purple);
+}
+
+.bubble-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.bubble-btn {
+  background: var(--bg-button);
+  border: 2px solid var(--primary-purple);
+  border-radius: 6px;
+  color: var(--primary-purple);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.bubble-btn:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+}
+
+/* MODAL I WIDOKI EKRANÓW */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal-backdrop.hidden {
+  display: none;
+}
+
+.modal-window {
+  width: 640px;
+  background: var(--bg-button);
+  border: 4px solid var(--primary-purple);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #EEE;
+  padding-bottom: 10px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 26px;
+  color: var(--primary-purple);
+  cursor: pointer;
+}
+
+.modal-body {
+  display: flex;
+  gap: 20px;
+}
+
+.modal-logo-wrapper {
+  width: 130px;
+  height: 130px;
+  border: 2px dashed #999;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f8f8;
+}
+
+.modal-logo-box {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.modal-info-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 2px solid #EEE;
+  padding-top: 14px;
+}
+
+.kiosk-action-btn {
+  height: 48px;
+  padding: 0 20px;
+  background: var(--primary-purple);
+  border: var(--border-width) solid var(--primary-purple);
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.kiosk-action-btn.secondary {
+  background: var(--bg-button);
+  color: var(--primary-purple);
+}
+
+/* WIDOKI EKRANÓW (POZOSTAŁE ZAKŁADKI) */
+#screens-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 180;
+}
+
+.screen-view {
+  position: absolute;
+  inset: 0;
+  background: rgba(237, 239, 242, 0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.screen-view.hidden {
+  display: none !important;
+}
+
+.screen-inner-card {
+  width: 680px;
+  padding: 40px;
+  border: 3px solid var(--primary-purple);
+  border-radius: 12px;
+  text-align: center;
+  background: var(--bg-button);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.screen-inner-card h2 {
+  font-size: 28px;
+  margin-bottom: 14px;
+}
+
+.screen-inner-card p {
+  font-size: 15px;
+  margin-bottom: 24px;
+  color: #555;
+}
+
+/* DOK BADACZA */
+#researcher-dock {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 999;
+}
+
+.dock-btn {
+  background: rgba(46, 8, 84, 0.85);
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.dock-menu {
+  position: absolute;
+  bottom: 36px;
+  right: 0;
+  width: 280px;
+  background: var(--bg-button);
+  border: 2px solid var(--primary-purple);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dock-menu.hidden {
+  display: none;
+}
+
+.exp-btn {
+  width: 100%;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--primary-purple);
+  background: #fff;
+  color: var(--primary-purple);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.exp-btn:hover {
+  background: var(--primary-purple);
+  color: #fff;
+}
+
+.exp-btn.danger {
+  border-color: #d32f2f;
+  color: #d32f2f;
+}
