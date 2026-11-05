@@ -1,15 +1,15 @@
 /**
- * Główny kontroler aplikacji infomatu (v3):
- * - Pełnoekranowy viewport z mapą w tle
- * - Wiszące kontrolki nawigacyjne (góra, dół, lewo, prawo)
- * - Przycisk "OK" na dole mapy zamykający trasę i powracający do szczegółów sklepu
- * - Nawigacja wielopiętrowa i obsługa zakładek ekranowych
+ * Główny kontroler aplikacji infomatu (v4):
+ * - Pełna obsługa ekranów modułowych (okno po prawej od lewego paska i pod górnym paskiem)
+ * - Czerwony 'X' zamykający okno i powracający do planu galerii
+ * - Płynne przełączanie zakładek górnych i bocznych
+ * - Zachowanie rejestracji eyetrackera dla wszystkich zdarzeń
  */
 
 let loggerInstance = null;
-let currentActiveFloor = 1; // Infomat znajduje się na 1. piętrze
+let currentActiveFloor = 1;
 let selectedStoreId = null;
-let activeRouteStoreId = null; // Zapamiętuje sklep dla aktywnej trasy
+let activeRouteStoreId = null;
 
 let mapState = {
   panX: 0,
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFloorNavigation();
   initTopSquareNavigation();
   initSideNavigation();
+  initModuleScreenWindow();
   initActionBubbleAndModal();
   initRouteDismissButton();
   initResearcherDock();
@@ -41,7 +42,6 @@ function updateMapTransform() {
   stage.style.transform = `translate(${mapState.panX}px, ${mapState.panY}px) rotateX(46deg) rotateZ(-34deg) scale(${mapState.scale})`;
 }
 
-// Obsługa przeciągania mapy (mapa może wjechać pod przyciski)
 function initMapPanning() {
   const viewport = document.getElementById("map-viewport");
 
@@ -96,13 +96,11 @@ function renderStoresForFloor(floor) {
   gridContainer.innerHTML = "";
   amenitiesContainer.innerHTML = "";
 
-  // Infomat TYLKO na piętrze 1
   const pin = document.getElementById("you-are-here-pin");
   if (pin) {
     pin.style.display = (floor === 1) ? "flex" : "none";
   }
 
-  // Renderowanie sklepów
   const stores = STORES_CATALOG.filter(s => s.floor === floor);
   stores.forEach(store => {
     const block = document.createElement("div");
@@ -132,7 +130,6 @@ function renderStoresForFloor(floor) {
     gridContainer.appendChild(block);
   });
 
-  // Renderowanie ikon infrastruktury
   const amenities = AMENITIES_CATALOG.filter(a => a.floor === floor);
   amenities.forEach(am => {
     const marker = document.createElement("div");
@@ -154,7 +151,6 @@ function handleStoreClick(store) {
   const clickedBlock = document.getElementById(`store-${store.id}`);
 
   if (selectedStoreId === store.id) {
-    // Odznaczenie
     clickedBlock.classList.remove("selected");
     selectedStoreId = null;
     hideActionBubble();
@@ -197,14 +193,13 @@ function hideRouteBanner() {
   document.getElementById("route-floor-banner").classList.add("hidden");
 }
 
-// Obsługa przycisku "OK — ZAMKNIJ TRASĘ"
+// Obsługa przycisku "OK" trasy
 function initRouteDismissButton() {
   const btnOk = document.getElementById("btn-route-ok");
   btnOk.addEventListener("click", () => {
     const storeToReopen = activeRouteStoreId;
     dismissActiveRoute();
 
-    // Powrót do okienka szczegółów sklepu (modal)
     if (storeToReopen) {
       openStoreModal(storeToReopen);
     }
@@ -222,7 +217,6 @@ function showRouteDismissButton(storeId) {
   document.getElementById("route-dismiss-container").classList.remove("hidden");
 }
 
-// Nawigacja wielopiętrowa
 function executeRouteNavigation(storeId) {
   const store = STORES_CATALOG.find(s => s.id === storeId);
   if (!store) return;
@@ -242,14 +236,12 @@ function executeRouteNavigation(storeId) {
     return;
   }
 
-  // Krok 1: Pokaż dojście do schodów na piętrze 1
   switchFloorTab(1);
   drawSimplePath(infomatCoords.x, infomatCoords.y, escalatorsCoords.x, escalatorsCoords.y);
   showRouteBanner(`Sklep znajduje się na Poziomie ${store.floor}. Idź do schodów ruchomych...`);
 
-  // Krok 2: Po 2.2 s przełącz na docelowe piętro
   setTimeout(() => {
-    if (!activeRouteStoreId) return; // Jeśli użytkownik zamknął trasę w międzyczasie
+    if (!activeRouteStoreId) return;
     switchFloorTab(store.floor);
     const targetStoreX = (store.col + store.w / 2) * (1000 / 12);
     const targetStoreY = (store.row + store.h / 2) * (700 / 10);
@@ -313,7 +305,57 @@ function initFloorNavigation() {
   });
 }
 
-// Górna nawigacja (przełączanie ekranów)
+// ========================================================
+// OBSŁUGA OKNA POZOSTAŁYCH EKRANÓW (CZERWONY 'X')
+// ========================================================
+function initModuleScreenWindow() {
+  const closeBtn = document.getElementById("btn-close-screen-window");
+  closeBtn.addEventListener("click", () => {
+    returnToGalleryMap();
+  });
+}
+
+function openModuleScreen(screenId, titleText) {
+  dismissActiveRoute();
+  hideActionBubble();
+
+  const moduleWindow = document.getElementById("module-screen-window");
+  const titleEl = document.getElementById("module-screen-title");
+  titleEl.innerText = titleText;
+
+  // Ukryj wszystkie widoki wewnętrzne
+  document.querySelectorAll(".tab-view-content").forEach(view => {
+    view.classList.add("hidden");
+  });
+
+  // Pokaż właściwy widok jeśli istnieje
+  const targetView = document.getElementById(`view-${screenId}`);
+  if (targetView) {
+    targetView.classList.remove("hidden");
+  }
+
+  moduleWindow.classList.remove("hidden");
+  loggerInstance.setScreen(screenId);
+}
+
+function returnToGalleryMap() {
+  const moduleWindow = document.getElementById("module-screen-window");
+  moduleWindow.classList.add("hidden");
+
+  // Reset aktywnych przycisków górnych
+  document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
+
+  // Reset aktywnych przycisków lewych i włączenie 'Plan Galerii'
+  document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
+  const planBtn = document.querySelector('.side-btn[data-screen="ekran_plan"]');
+  if (planBtn) {
+    planBtn.classList.add("active");
+  }
+
+  loggerInstance.setScreen("ekran_plan");
+}
+
+// Górna nawigacja
 function initTopSquareNavigation() {
   const topButtons = document.querySelectorAll(".top-square-btn");
   topButtons.forEach(btn => {
@@ -321,17 +363,17 @@ function initTopSquareNavigation() {
       const screenTarget = btn.getAttribute("data-screen");
       const labelText = btn.querySelector(".label").innerText.replace(/\\n/g, " ");
 
+      // Aktualizuj stany przycisków
       topButtons.forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
-      // TUTAJ MOŻNA WSTAWIĆ DEDYKOWANĄ FUNKCJĘ DLA DANEGO EKRANU (NP. showKinoScreen(), showSklepyScreen())
-      showScreenView(screenTarget, labelText);
-      loggerInstance.setScreen(screenTarget);
+      openModuleScreen(screenTarget, labelText);
     });
   });
 }
 
-// Lewa nawigacja (przełączanie ekranów)
+// Lewa nawigacja
 function initSideNavigation() {
   const sideButtons = document.querySelectorAll(".side-btn");
   sideButtons.forEach(btn => {
@@ -339,39 +381,17 @@ function initSideNavigation() {
       const screenTarget = btn.getAttribute("data-screen");
       const labelText = btn.querySelector(".side-title").innerText;
 
+      document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
       sideButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
       if (screenTarget === "ekran_plan") {
-        hideAllScreens();
-        loggerInstance.setScreen("ekran_plan");
+        returnToGalleryMap();
       } else {
-        // TUTAJ MOŻNA WSTAWIĆ DEDYKOWANE WIDOKI (NP. showPromocjeScreen(), showParkingScreen())
-        showScreenView(screenTarget, labelText);
-        loggerInstance.setScreen(screenTarget);
+        openModuleScreen(screenTarget, labelText);
       }
     });
   });
-
-  document.getElementById("btn-back-to-map").addEventListener("click", () => {
-    hideAllScreens();
-    sideButtons.forEach(b => b.classList.remove("active"));
-    const planBtn = document.querySelector('.side-btn[data-screen="ekran_plan"]');
-    if (planBtn) planBtn.classList.add("active");
-    document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
-    loggerInstance.setScreen("ekran_plan");
-  });
-}
-
-function showScreenView(screenId, titleText) {
-  const overlay = document.getElementById("placeholder-screen");
-  document.getElementById("placeholder-title").innerText = titleText;
-  document.getElementById("placeholder-desc").innerText = `Moduł: ${screenId}. Tutaj możesz wpiąć dedykowany szablon HTML widoku.`;
-  overlay.classList.remove("hidden");
-}
-
-function hideAllScreens() {
-  document.getElementById("placeholder-screen").classList.add("hidden");
 }
 
 function initActionBubbleAndModal() {

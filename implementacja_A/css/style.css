@@ -1,20 +1,22 @@
 /* ========================================================
    GŁÓWNE STYLE INFOMATU:
-   - Tło całej aplikacji: jasnoszary odcień (#EDEFF2), dzięki czemu
-     białe przyciski wyraźnie się wyróżniają.
-   - Mapa zajmuje 100% ekranu w tle (#map-viewport).
-   - Kontrolki (góra, lewo, prawo, dół) nie mają własnego tła
-     i "wiszą" nad mapą (pointer-events: none dla kontenerów, auto dla przycisków).
-   - Mapa może swobodnie przesuwać się pod pływającymi przyciskami.
+   - Tło aplikacji: jasnoszary (#EDEFF2)
+   - Mapa pod spodem na 100% ekranu
+   - Wiszące kontrolki
+   - Nowe okno modułowe ekranów:
+     - umieszczone pod górnym paskiem (top: 116px)
+     - obok lewego paska (left: 240px)
+     - prawa i dolna krawędź sięgają do samego brzegu (right: 0, bottom: 0)
+     - czerwony przycisk 'X' w prawym górnym rogu zamykający okno
    ======================================================== */
 
 :root {
   --primary-purple: #2E0854;
-  --bg-app: #EDEFF2;       /* Jasnoszare tło całego interfejsu */
-  --bg-button: #FFFFFF;    /* Białe tło przycisków */
+  --bg-app: #EDEFF2;
+  --bg-button: #FFFFFF;
   --border-width: 2px;
   --shadow-dark: rgba(0, 0, 0, 0.45);
-  --building-bg: #27282b;  /* Jednolity ciemnoszary kolor galerii */
+  --building-bg: #27282b;
   --store-bg: #EAEAEA;
   --store-selected: #D32F2F;
 }
@@ -60,7 +62,7 @@ html, body {
   perspective: 1400px;
   overflow: hidden;
   cursor: grab;
-  z-index: 10; /* Mapa pod pływającymi przyciskami */
+  z-index: 10;
 }
 
 #map-viewport:active {
@@ -76,7 +78,6 @@ html, body {
   will-change: transform;
 }
 
-/* Bryła galerii */
 #building-base {
   width: 100%;
   height: 100%;
@@ -88,14 +89,12 @@ html, body {
   overflow: hidden;
 }
 
-/* Warstwa korytarza */
 .corridor-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-/* Siatka puzzli */
 .puzzle-grid {
   position: absolute;
   inset: 12px;
@@ -131,7 +130,6 @@ html, body {
   transform: translateZ(8px);
 }
 
-/* Duże sklepy */
 .store-block.large-store .store-brand-box {
   display: flex;
   align-items: center;
@@ -157,7 +155,6 @@ html, body {
   text-transform: uppercase;
 }
 
-/* Małe sklepy (czysty kształt klocka) */
 .store-block.small-store .store-brand-box,
 .store-block.small-store .store-caption {
   display: none;
@@ -180,7 +177,6 @@ html, body {
   margin-bottom: 2px;
 }
 
-/* Punkty infrastruktury na mapie */
 .amenities-layer {
   position: absolute;
   inset: 12px;
@@ -223,7 +219,6 @@ html, body {
   white-space: nowrap;
 }
 
-/* Infomat pin */
 .infomat-pin {
   position: absolute;
   top: 50%;
@@ -274,10 +269,8 @@ html, body {
 }
 
 /* ========================================================
-   WISZĄCE KONTROLKI INTERFEJSU (PRZEZROCZYSTE KONTENERY)
+   WISZĄCE KONTROLKI INTERFEJSU
    ======================================================== */
-
-/* GÓRNY PASEK */
 #top-header {
   position: absolute;
   top: 0;
@@ -288,9 +281,9 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: transparent; /* Brak tła sekcji */
+  background: transparent;
   border: none;
-  pointer-events: none;   /* Mapa pod spodem reaguje na gesty poza przyciskami */
+  pointer-events: none;
   z-index: 100;
 }
 
@@ -397,7 +390,7 @@ html, body {
   color: #555555;
 }
 
-/* LEWE MENU BOCZNE (WISZĄCE) */
+/* LEWE MENU BOCZNE */
 .side-panel-left {
   position: absolute;
   top: 130px;
@@ -456,7 +449,7 @@ html, body {
   color: #FFFFFF !important;
 }
 
-/* PRAWY PANEL SYMBOLI (WISZĄCY) */
+/* PRAWY PANEL SYMBOLI */
 .side-symbols {
   position: absolute;
   top: 130px;
@@ -513,7 +506,7 @@ html, body {
   border-radius: 4px;
 }
 
-/* DOLNE STEROWANIE PIĘTRAMI (WISZĄCE) */
+/* DOLNE STEROWANIE PIĘTRAMI */
 #bottom-controls {
   position: absolute;
   bottom: 24px;
@@ -574,7 +567,125 @@ html, body {
 }
 
 /* ========================================================
-   PRZYCISK "OK" DLA TRASY NAWIGACJI
+   OKNO POZOSTAŁYCH EKRANÓW (MODUŁOWE)
+   - Pod górnym paskiem (top: 116px)
+   - Obok lewego paska (left: 240px)
+   - Dochodzi do samej dolnej i prawej krawędzi (right: 0, bottom: 0)
+   ======================================================== */
+.module-window {
+  position: absolute;
+  top: 116px;
+  left: 240px;
+  right: 0;
+  bottom: 0;
+  background: #FFFFFF;
+  border-top: 3px solid var(--primary-purple);
+  border-left: 3px solid var(--primary-purple);
+  box-shadow: -8px 8px 30px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  z-index: 150;
+  overflow: hidden;
+  animation: slideInScreen 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.module-window.hidden {
+  display: none !important;
+}
+
+@keyframes slideInScreen {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* CZERWONY 'X' W PRAWYM GÓRNYM ROGU */
+.screen-close-red-x {
+  position: absolute;
+  top: 18px;
+  right: 28px;
+  width: 52px;
+  height: 52px;
+  background: #D32F2F;
+  border: 2px solid #8B0000;
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(211, 47, 47, 0.4);
+  transition: all 0.15s ease;
+  z-index: 160;
+}
+
+.screen-close-red-x:hover {
+  background: #B71C1C;
+  transform: scale(1.05);
+}
+
+.screen-close-red-x:active {
+  background: #7F0000;
+  transform: scale(0.95);
+}
+
+.module-header {
+  padding: 24px 36px;
+  border-bottom: 2px solid #EEEEEE;
+  display: flex;
+  align-items: center;
+}
+
+.module-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--primary-purple);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.module-body {
+  flex: 1;
+  padding: 36px;
+  overflow-y: auto;
+  background: #FAFAFA;
+}
+
+.tab-view-content {
+  background: #FFFFFF;
+  border: 2px solid #E0E0E0;
+  border-radius: 12px;
+  padding: 32px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.tab-view-content.hidden {
+  display: none !important;
+}
+
+.placeholder-text {
+  font-size: 18px;
+  color: #555555;
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+/* ========================================================
+   PRZYCISK "OK" DLA TRASY
    ======================================================== */
 .route-dismiss-box {
   position: absolute;
@@ -623,7 +734,6 @@ html, body {
   100% { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* BANER MIĘDZYPIĘTROWY */
 .route-banner {
   position: absolute;
   top: 120px;
@@ -652,7 +762,6 @@ html, body {
   height: 24px;
 }
 
-/* CHMURKA AKCJI */
 .action-bubble {
   position: absolute;
   top: 20px;
@@ -701,7 +810,6 @@ html, body {
   color: #FFFFFF;
 }
 
-/* MODAL I WIDOKI EKRANÓW */
 .modal-backdrop {
   position: absolute;
   inset: 0;
@@ -797,49 +905,6 @@ html, body {
 .kiosk-action-btn.secondary {
   background: var(--bg-button);
   color: var(--primary-purple);
-}
-
-/* WIDOKI EKRANÓW (POZOSTAŁE ZAKŁADKI) */
-#screens-container {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 180;
-}
-
-.screen-view {
-  position: absolute;
-  inset: 0;
-  background: rgba(237, 239, 242, 0.97);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-}
-
-.screen-view.hidden {
-  display: none !important;
-}
-
-.screen-inner-card {
-  width: 680px;
-  padding: 40px;
-  border: 3px solid var(--primary-purple);
-  border-radius: 12px;
-  text-align: center;
-  background: var(--bg-button);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
-.screen-inner-card h2 {
-  font-size: 28px;
-  margin-bottom: 14px;
-}
-
-.screen-inner-card p {
-  font-size: 15px;
-  margin-bottom: 24px;
-  color: #555;
 }
 
 /* DOK BADACZA */
