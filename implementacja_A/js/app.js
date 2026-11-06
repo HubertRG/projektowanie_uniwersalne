@@ -319,6 +319,13 @@ function clearNavigationRoute() {
 }
 
 function switchFloorTab(floor) {
+  // --- RESET STANU ZAZNACZENIA ---
+  hideActionBubble();
+  selectedStoreId = null;
+  mapState.scale = 0.88;
+  updateMapTransform();
+
+  // --- DOTYCHCZASOWA LOGIKA ---
   currentActiveFloor = floor;
   document.querySelectorAll(".floor-btn").forEach(btn => {
     const f = parseInt(btn.getAttribute("data-floor"), 10);
@@ -333,6 +340,8 @@ function initFloorNavigation() {
   floorButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       const floor = parseInt(btn.getAttribute("data-floor"), 10);
+      hideActionBubble();       // ← NOWE
+      selectedStoreId = null;   // ← NOWE
       dismissActiveRoute();
       switchFloorTab(floor);
     });
@@ -340,6 +349,10 @@ function initFloorNavigation() {
 
   const whereBtn = document.getElementById("btn-where-am-i");
   whereBtn.addEventListener("click", () => {
+    hideActionBubble();         // ← NOWE
+    selectedStoreId = null;     // ← NOWE
+    dismissActiveRoute();       // ← NOWE (spójność z przyciskami pięter)
+
     whereBtn.classList.add("active");
     setTimeout(() => whereBtn.classList.remove("active"), 400);
 
