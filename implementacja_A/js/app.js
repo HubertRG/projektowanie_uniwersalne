@@ -172,15 +172,67 @@ function handleStoreClick(store) {
   }
 }
 
+// ============================================================
+// POZYCJONOWANIE BUBBLE'A NAD KONKRETNYM SKLEPEM
+// ============================================================
+
+// Sumuje offsetLeft/offsetTop w łańcuchu offsetParent.
+// Działa w NIEZTRANSFORMOWANEJ przestrzeni layoutu — odpornie na rotateX/rotateZ/scale mapy.
+function offsetRelativeTo(el, ancestor) {
+  let x = 0, y = 0;
+  let node = el;
+  while (node && node !== ancestor) {
+    x += node.offsetLeft;
+    y += node.offsetTop;
+    node = node.offsetParent;
+  }
+  return { x, y };
+}
+
 function showActionBubble(store, storeElement) {
   const bubble = document.getElementById("store-action-bubble");
-  const title = document.getElementById("bubble-store-name");
+  const title  = document.getElementById("bubble-store-name");
+  if (!bubble || !storeElement) return;
+
   title.innerText = `${store.name} (Poziom ${store.floor})`;
+
+  // Per-sklepowe AOI — ułatwia analizę eyetrackera (patrz niżej)
+  bubble.setAttribute("data-aoi", `store_actions_bubble_${store.id}`);
+
+  // Wymuś właściwości niezależnie od CSS
+  bubble.style.position      = "absolute";
+  bubble.style.pointerEvents = "auto";
+
+  // Układ odniesienia: #map-stage (wspólny przodek sklepów i bubble'a;
+  // NIE #building-base — inaczej bubble byłby przycinany przez overflow: hidden)
+  const stage = document.getElementById("map-stage");
+  const pos   = offsetRelativeTo(storeElement, stage);
+
+  const storeW = storeElement.offsetWidth;
+  const storeH = storeElement.offsetHeight;
+  const centerX = pos.x + storeW / 2;
+
+  // Inteligentne umiejscowienie: dla górnego rzędu (row 1)
+  // kładziemy bubble POD sklepem, żeby nie wystawał poza mapę.
+  if (store.row <= 1) {
+    bubble.style.left = `${centerX}px`;
+    bubble.style.top  = `${pos.y + storeH}px`;
+    bubble.style.transform = "translate(-50%, 12px) translateZ(40px)";
+  } else {
+    bubble.style.left = `${centerX}px`;
+    bubble.style.top  = `${pos.y}px`;
+    bubble.style.transform = "translate(-50%, calc(-100% - 12px)) translateZ(40px)";
+  }
+
   bubble.classList.remove("hidden");
 }
 
 function hideActionBubble() {
-  document.getElementById("store-action-bubble").classList.add("hidden");
+  const bubble = document.getElementById("store-action-bubble");
+  if (!bubble) return;
+  bubble.classList.add("hidden");
+  // Wyczyść per-sklepowe AOI, żeby kolejne zdarzenia nie były przypisywane do starego sklepu
+  bubble.setAttribute("data-aoi", "store_actions_bubble");
 }
 
 function showRouteBanner(msg) {

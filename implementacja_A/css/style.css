@@ -764,9 +764,7 @@ html, body {
 
 .action-bubble {
   position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateZ(40px);
+  /* top / left / transform ustawia w 100% JS w showActionBubble() */
   background: var(--bg-button);
   border: 3px solid var(--primary-purple);
   border-radius: 12px;
@@ -777,12 +775,20 @@ html, body {
   align-items: center;
   gap: 8px;
   z-index: 80;
+  will-change: left, top, transform;
+  pointer-events: auto;
+  /* Zapobiega "skokowi" przy pierwszym ustawieniu pozycji */
+  opacity: 0;
+  transition: opacity 0.08s ease;
+}
+
+.action-bubble:not(.hidden) {
+  opacity: 1;
 }
 
 .action-bubble.hidden {
   display: none !important;
 }
-
 .bubble-title {
   font-size: 15px;
   font-weight: 800;
