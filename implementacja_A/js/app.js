@@ -71,6 +71,9 @@ function initMapPanning() {
   const viewport = document.getElementById("map-viewport");
 
   const startDrag = (e) => {
+    // Jeśli trasa jest aktywna, blokuj przesuwanie
+    if (activeRouteStoreId) return;
+
     if (e.target.closest("button") || e.target.closest(".store-block") || e.target.closest(".map-facility-marker")) return;
     mapState.isDragging = true;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -86,10 +89,19 @@ function initMapPanning() {
     mapState.panX = clientX - mapState.startX;
     mapState.panY = clientY - mapState.startY;
     updateMapTransform();
+
+    // Schowaj dymek podczas ruchu kamery
+    hideActionBubble();
   };
 
-  const endDrag = () => {
-    mapState.isDragging = false;
+  const endDrag = (e) => {
+    if (mapState.isDragging) {
+      mapState.isDragging = false;
+      // Kliknięcie w tło mapy (nie w sklep) powoduje automatyczne odznaczenie
+      if (e.target.id === "building-base" || e.target.id === "corridor-layer" || e.target.id === "map-viewport") {
+        deselectStore(true);
+      }
+    }
   };
 
   viewport.addEventListener("mousedown", startDrag);
@@ -172,17 +184,29 @@ function renderStoresForFloor(floor) {
   });
 }
 
+function deselectStore(resetZoom = true) {
+  if (selectedStoreId) {
+    const prevBlock = document.getElementById(`store-${selectedStoreId}`);
+    if (prevBlock) {
+      prevBlock.classList.remove("selected");
+    }
+    selectedStoreId = null;
+  }
+  hideActionBubble();
+
+  if (resetZoom) {
+    mapState.scale = 0.88;
+    updateMapTransform();
+  }
+}
+
 function handleStoreClick(store) {
   const clickedBlock = document.getElementById(`store-${store.id}`);
 
   if (selectedStoreId === store.id) {
-    clickedBlock.classList.remove("selected");
-    selectedStoreId = null;
-    hideActionBubble();
-    dismissActiveRoute();
-    mapState.scale = 0.88;
-    updateMapTransform();
+    deselectStore(true);
   } else {
+    // Odznacz poprzedni sklep
     if (selectedStoreId) {
       const prevBlock = document.getElementById(`store-${selectedStoreId}`);
       if (prevBlock) prevBlock.classList.remove("selected");
@@ -190,6 +214,8 @@ function handleStoreClick(store) {
 
     clickedBlock.classList.add("selected");
     selectedStoreId = store.id;
+
+    // Pokaż dymek w pionie 2D nad sklepem
     showActionBubble(store, clickedBlock);
 
     mapState.scale = 1.04;
@@ -211,39 +237,40 @@ function offsetRelativeTo(el, ancestor) {
 function showActionBubble(store, storeElement) {
   const bubble = document.getElementById("store-action-bubble");
   const title = document.getElementById("bubble-store-name");
+  const subtitle = document.getElementById("bubble-store-cat-floor");
+  const logoBox = document.getElementById("bubble-store-logo");
+
   if (!bubble || !storeElement) return;
 
-  title.innerText = `${store.name} (Poziom ${store.floor})`;
+  title.innerText = store.name;
+  subtitle.innerText = `Poziom ${store.floor} • ${store.category}`;
+  logoBox.innerText = store.name.substring(0, 10);
   bubble.setAttribute("data-aoi", `store_actions_bubble_${store.id}`);
 
-  bubble.style.position = "absolute";
-  bubble.style.pointerEvents = "auto";
+  // Pobierz rzeczywiste współrzędne 2D na ekranie monitora kiosku
+  const rect = storeElement.getBoundingClientRect();
+  const kioskRect = document.getElementById("kiosk-app").getBoundingClientRect();
 
-  const stage = document.getElementById("map-stage");
-  const pos = offsetRelativeTo(storeElement, stage);
+  // Środek sklepu w układzie kontenera aplikacji
+  const storeScreenX = rect.left + rect.width / 2 - kioskRect.left;
+  let storeScreenY = rect.top - kioskRect.top - 12; // 12px ponad górną krawędzią sklepu
 
-  const storeW = storeElement.offsetWidth;
-  const storeH = storeElement.offsetHeight;
-  const centerX = pos.x + storeW / 2;
-
-  if (store.row <= 1) {
-    bubble.style.left = `${centerX}px`;
-    bubble.style.top = `${pos.y + storeH}px`;
-    bubble.style.transform = "translate(-50%, 12px) translateZ(40px)";
-  } else {
-    bubble.style.left = `${centerX}px`;
-    bubble.style.top = `${pos.y}px`;
-    bubble.style.transform = "translate(-50%, calc(-100% - 12px)) translateZ(40px)";
+  // Zabezpieczenie przed wyjechaniem poza górną krawędź ekranu (pod nagłówek)
+  if (storeScreenY < 130) {
+    storeScreenY = rect.bottom - kioskRect.top + 130; // Wyświetl poniżej sklepu
   }
 
+  bubble.style.left = `${storeScreenX}px`;
+  bubble.style.top = `${storeScreenY}px`;
   bubble.classList.remove("hidden");
 }
 
 function hideActionBubble() {
   const bubble = document.getElementById("store-action-bubble");
-  if (!bubble) return;
-  bubble.classList.add("hidden");
-  bubble.setAttribute("data-aoi", "store_actions_bubble");
+  if (bubble) {
+    bubble.classList.add("hidden");
+    bubble.setAttribute("data-aoi", "store_actions_bubble");
+  }
 }
 
 function showRouteBanner(msg) {
@@ -271,12 +298,21 @@ function initRouteDismissButton() {
 function dismissActiveRoute() {
   clearNavigationRoute();
   hideRouteBanner();
+  activeRouteStoreId = null;
+
+  // Schowaj przycisk OK oraz zdejmij blokadę reszty interfejsu
   document.getElementById("route-dismiss-container").classList.add("hidden");
+  document.getElementById("route-blocker-overlay").classList.add("hidden");
+
+  // Automatyczne odznaczenie sklepu po zakończeniu trasy
+  deselectStore(true);
 }
 
 function showRouteDismissButton(storeId) {
   activeRouteStoreId = storeId;
+  // Pokaż przycisk OK oraz włącz pełną blokadę reszty interfejsu
   document.getElementById("route-dismiss-container").classList.remove("hidden");
+  document.getElementById("route-blocker-overlay").classList.remove("hidden");
 }
 
 function executeRouteNavigation(storeId) {
@@ -329,10 +365,8 @@ function clearNavigationRoute() {
 }
 
 function switchFloorTab(floor) {
-  hideActionBubble();
-  selectedStoreId = null;
-  mapState.scale = 0.88;
-  updateMapTransform();
+  // Automatycznie odznacz sklep przy zmianie piętra
+  deselectStore(false);
 
   currentActiveFloor = floor;
   document.querySelectorAll(".floor-btn").forEach(btn => {
@@ -347,19 +381,25 @@ function initFloorNavigation() {
   const floorButtons = document.querySelectorAll(".floor-btn");
   floorButtons.forEach(btn => {
     btn.addEventListener("click", () => {
+      // Ignoruj, jeśli trwa nawigacja (zabezpieczenie programistyczne)
+      if (activeRouteStoreId) return;
       const floor = parseInt(btn.getAttribute("data-floor"), 10);
-      hideActionBubble();
-      selectedStoreId = null;
-      dismissActiveRoute();
       switchFloorTab(floor);
     });
   });
 
   const whereBtn = document.getElementById("btn-where-am-i");
   whereBtn.addEventListener("click", () => {
-    hideActionBubble();
-    selectedStoreId = null;
-    dismissActiveRoute();
+    if (activeRouteStoreId) return;
+
+    // Automatycznie odznacz zaznaczony sklep przy lokalizacji użytkownika
+    deselectStore(false);
+
+    // 2. WYŚRODKOWANIE I RESET SKALI MAPY (płynny powrót na środek ekranu)
+    mapState.panX = 0;
+    mapState.panY = 0;
+    mapState.scale = 0.88; // Domyślna skala w stanie spoczynku
+    updateMapTransform();
 
     whereBtn.classList.add("active");
     setTimeout(() => whereBtn.classList.remove("active"), 400);
@@ -377,7 +417,6 @@ function initFloorNavigation() {
     }
   });
 }
-
 // ========================================================
 // OBSŁUGA OKNA POZOSTAŁYCH EKRANÓW (CZERWONY 'X')
 // ========================================================
@@ -389,21 +428,17 @@ function initModuleScreenWindow() {
 }
 
 function openModuleScreen(screenId, titleText) {
+  // Automatycznie odznacz sklep i zamknij dymek
+  deselectStore(false);
   dismissActiveRoute();
-  hideActionBubble();
 
   const moduleWindow = document.getElementById("module-screen-window");
   const titleEl = document.getElementById("module-screen-title");
   titleEl.innerText = titleText;
 
-  document.querySelectorAll(".tab-view-content").forEach(view => {
-    view.classList.add("hidden");
-  });
-
+  document.querySelectorAll(".tab-view-content").forEach(view => view.classList.add("hidden"));
   const targetView = document.getElementById(`view-${screenId}`);
-  if (targetView) {
-    targetView.classList.remove("hidden");
-  }
+  if (targetView) targetView.classList.remove("hidden");
 
   moduleWindow.classList.remove("hidden");
   loggerInstance.setScreen(screenId);

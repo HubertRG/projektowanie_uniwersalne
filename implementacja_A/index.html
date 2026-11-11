@@ -34,16 +34,10 @@
           </div>
         </div>
 
-        <!-- PŁYWAJĄCA CHMURKA AKCJI PO KLIKNIĘCIU SKLEPU -->
-        <div id="store-action-bubble" class="action-bubble hidden" data-aoi="store_actions_bubble">
-          <span id="bubble-store-name" class="bubble-title">Sklep</span>
-          <div class="bubble-buttons">
-            <button id="btn-show-route" class="bubble-btn" data-aoi="btn_bubble_route">Pokaż drogę</button>
-            <button id="btn-show-modal" class="bubble-btn" data-aoi="btn_bubble_info">O sklepie</button>
-          </div>
-        </div>
       </div>
     </div>
+
+    <div id="route-blocker-overlay" class="route-blocker hidden" data-aoi="route_interaction_blocker"></div>
 
     <!-- PŁYWAJĄCY PRZYCISK "OK" PODCZAS AKTYWNEJ TRASY -->
     <div id="route-dismiss-container" class="route-dismiss-box hidden" data-aoi="route_dismiss_box">
@@ -51,6 +45,25 @@
         <span class="ok-check">✓</span>
         <span class="ok-label">OK — ZAMKNIJ TRASĘ</span>
       </button>
+    </div>
+
+    <!-- PŁYWAJĄCY DYMEK AKCJI W PIONIE (2D SCREEN SPACE) -->
+    <div id="store-action-bubble" class="action-bubble-2d hidden" data-aoi="store_actions_bubble">
+      <!-- Góra dymka: logo i nazwa sklepu -->
+      <div class="bubble-header-2d">
+        <div id="bubble-store-logo" class="bubble-logo-box-2d">LOGO</div>
+        <div class="bubble-title-group-2d">
+          <span id="bubble-store-name" class="bubble-title-2d">Nazwa Sklepu</span>
+          <span id="bubble-store-cat-floor" class="bubble-subtitle-2d">Poziom 1 • Moda</span>
+        </div>
+      </div>
+      <!-- Dół dymka: przyciski Pokaż drogę i O sklepie -->
+      <div class="bubble-buttons-2d">
+        <button id="btn-show-route" class="bubble-btn-2d primary" data-aoi="btn_bubble_route">Pokaż drogę</button>
+        <button id="btn-show-modal" class="bubble-btn-2d secondary" data-aoi="btn_bubble_info">O sklepie</button>
+      </div>
+      <!-- Dzióbek wskazujący na sklep -->
+      <div class="bubble-arrow-2d"></div>
     </div>
 
     <!-- PŁYWAJĄCY BANER PRZEJŚCIA MIĘDZY PIĘTRAMI -->

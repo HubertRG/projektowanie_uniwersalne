@@ -1235,13 +1235,29 @@ html, body {
   line-height: 1.6;
 }
 
-/* PRZYCISK OK DLA TRASY */
+
+/* ========================================================
+   WARSTWA BLOKUJĄCA INTERAKCJĘ PODCZAS TRASY
+   ======================================================== */
+.route-blocker {
+  position: absolute;
+  inset: 0;
+  z-index: 140; /* Ponad mapą, nagłówkiem i menu, ale pod przyciskiem OK */
+  background: rgba(0, 0, 0, 0.15); /* Dyskretne wyszarzenie tła */
+  cursor: not-allowed;
+  pointer-events: auto; /* Przechwytuje i blokuje wszystkie kliknięcia */
+}
+
+.route-blocker.hidden {
+  display: none !important;
+}
+
 .route-dismiss-box {
   position: absolute;
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 150;
+  z-index: 170;
   animation: bounceIn 0.3s ease-out;
 }
 
@@ -1306,52 +1322,138 @@ html, body {
   height: 24px;
 }
 
-.action-bubble {
+/* ========================================================
+   PIONOWY DYMEK AKCJI SKLEPU W PRZESTRZENI 2D (POZA 3D)
+   ======================================================== */
+.action-bubble-2d {
   position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateZ(40px);
-  background: var(--bg-button);
+  z-index: 130; /* Ponad mapą i podłożem */
+  background: #FFFFFF;
   border: 3px solid var(--primary-purple);
   border-radius: 12px;
-  padding: 10px 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  padding: 14px 16px;
+  box-shadow: 0 12px 35px rgba(46, 8, 84, 0.28);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  z-index: 80;
+  gap: 12px;
+  min-width: 270px;
+  max-width: 340px;
+  pointer-events: auto;
+  /* Domyślne wyśrodkowanie ponad wskazanym punktem */
+  transform: translate(-50%, -100%);
+  animation: popInBubble 0.18s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-.action-bubble.hidden {
+.action-bubble-2d.hidden {
   display: none !important;
 }
 
-.bubble-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--primary-purple);
+@keyframes popInBubble {
+  from { opacity: 0; transform: translate(-50%, -90%) scale(0.92); }
+  to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
 }
 
-.bubble-buttons {
+/* Góra dymka: logo po lewej, obok nazwa i piętro */
+.bubble-header-2d {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid #F0F0F0;
+  padding-bottom: 8px;
+}
+
+.bubble-logo-box-2d {
+  width: 50px;
+  height: 42px;
+  background: #F8F8FA;
+  border: 1px solid #CCC;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #333;
+  text-align: center;
+  padding: 2px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.bubble-title-group-2d {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bubble-title-2d {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-purple);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.bubble-subtitle-2d {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666666;
+  margin-top: 2px;
+}
+
+/* Dół dymka: przyciski */
+.bubble-buttons-2d {
   display: flex;
   gap: 8px;
 }
 
-.bubble-btn {
-  background: var(--bg-button);
-  border: 2px solid var(--primary-purple);
+.bubble-btn-2d {
+  flex: 1;
+  height: 40px;
   border-radius: 6px;
-  color: var(--primary-purple);
   font-size: 13px;
-  font-weight: 700;
-  padding: 6px 14px;
+  font-weight: 800;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
 }
 
-.bubble-btn:active {
+.bubble-btn-2d.primary {
+  background: var(--primary-purple);
+  border: 2px solid var(--primary-purple);
+  color: #FFFFFF;
+}
+
+.bubble-btn-2d.primary:active {
+  background: #1B0333;
+}
+
+.bubble-btn-2d.secondary {
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  color: var(--primary-purple);
+}
+
+.bubble-btn-2d.secondary:active {
   background: var(--primary-purple);
   color: #FFFFFF;
+}
+
+/* Dzióbek dymka */
+.bubble-arrow-2d {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid var(--primary-purple);
 }
 
 .modal-backdrop {
