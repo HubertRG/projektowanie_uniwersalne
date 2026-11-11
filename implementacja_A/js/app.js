@@ -1,9 +1,9 @@
 /**
- * Główny kontroler aplikacji infomatu (v4):
- * - Pełna obsługa ekranów modułowych (okno po prawej od lewego paska i pod górnym paskiem)
- * - Czerwony 'X' zamykający okno i powracający do planu galerii
- * - Płynne przełączanie zakładek górnych i bocznych
- * - Zachowanie rejestracji eyetrackera dla wszystkich zdarzeń
+ * Główny kontroler aplikacji infomatu (v5):
+ * - Implementacja ekranów: Aktualności (siatka 2x2, suwak, modal), Promocje (siatka 2x2, suwak, modal),
+ *   Komunikacja (2 kolumny, filtrowanie po przystankach, rozkład godzinowy), Parking (2 kolumny, cennik, uwagi, regulamin).
+ * - Czerwony 'X' zamykający okno i powracający do planu galerii.
+ * - Pełna integracja z rejestratorem eyetrackera dla wszystkich zdarzeń (kliknięcia w kafelki, przystanki, linie, modal).
  */
 
 let loggerInstance = null;
@@ -20,6 +20,9 @@ let mapState = {
   startY: 0
 };
 
+let selectedStopId = "stop_galeria_01";
+let selectedLineNum = "115";
+
 document.addEventListener("DOMContentLoaded", () => {
   loggerInstance = new EyeTrackerLogger();
   loggerInstance.setFloor(1);
@@ -34,6 +37,12 @@ document.addEventListener("DOMContentLoaded", () => {
   initActionBubbleAndModal();
   initRouteDismissButton();
   initResearcherDock();
+
+  // Inicjalizacja treści modułów
+  initNewsModule();
+  initPromoModule();
+  initTransitModule();
+  initNewsPromoModalEvents();
 });
 
 function updateMapTransform() {
@@ -172,12 +181,6 @@ function handleStoreClick(store) {
   }
 }
 
-// ============================================================
-// POZYCJONOWANIE BUBBLE'A NAD KONKRETNYM SKLEPEM
-// ============================================================
-
-// Sumuje offsetLeft/offsetTop w łańcuchu offsetParent.
-// Działa w NIEZTRANSFORMOWANEJ przestrzeni layoutu — odpornie na rotateX/rotateZ/scale mapy.
 function offsetRelativeTo(el, ancestor) {
   let x = 0, y = 0;
   let node = el;
@@ -191,36 +194,29 @@ function offsetRelativeTo(el, ancestor) {
 
 function showActionBubble(store, storeElement) {
   const bubble = document.getElementById("store-action-bubble");
-  const title  = document.getElementById("bubble-store-name");
+  const title = document.getElementById("bubble-store-name");
   if (!bubble || !storeElement) return;
 
   title.innerText = `${store.name} (Poziom ${store.floor})`;
-
-  // Per-sklepowe AOI — ułatwia analizę eyetrackera (patrz niżej)
   bubble.setAttribute("data-aoi", `store_actions_bubble_${store.id}`);
 
-  // Wymuś właściwości niezależnie od CSS
-  bubble.style.position      = "absolute";
+  bubble.style.position = "absolute";
   bubble.style.pointerEvents = "auto";
 
-  // Układ odniesienia: #map-stage (wspólny przodek sklepów i bubble'a;
-  // NIE #building-base — inaczej bubble byłby przycinany przez overflow: hidden)
   const stage = document.getElementById("map-stage");
-  const pos   = offsetRelativeTo(storeElement, stage);
+  const pos = offsetRelativeTo(storeElement, stage);
 
   const storeW = storeElement.offsetWidth;
   const storeH = storeElement.offsetHeight;
   const centerX = pos.x + storeW / 2;
 
-  // Inteligentne umiejscowienie: dla górnego rzędu (row 1)
-  // kładziemy bubble POD sklepem, żeby nie wystawał poza mapę.
   if (store.row <= 1) {
     bubble.style.left = `${centerX}px`;
-    bubble.style.top  = `${pos.y + storeH}px`;
+    bubble.style.top = `${pos.y + storeH}px`;
     bubble.style.transform = "translate(-50%, 12px) translateZ(40px)";
   } else {
     bubble.style.left = `${centerX}px`;
-    bubble.style.top  = `${pos.y}px`;
+    bubble.style.top = `${pos.y}px`;
     bubble.style.transform = "translate(-50%, calc(-100% - 12px)) translateZ(40px)";
   }
 
@@ -231,7 +227,6 @@ function hideActionBubble() {
   const bubble = document.getElementById("store-action-bubble");
   if (!bubble) return;
   bubble.classList.add("hidden");
-  // Wyczyść per-sklepowe AOI, żeby kolejne zdarzenia nie były przypisywane do starego sklepu
   bubble.setAttribute("data-aoi", "store_actions_bubble");
 }
 
@@ -245,7 +240,6 @@ function hideRouteBanner() {
   document.getElementById("route-floor-banner").classList.add("hidden");
 }
 
-// Obsługa przycisku "OK" trasy
 function initRouteDismissButton() {
   const btnOk = document.getElementById("btn-route-ok");
   btnOk.addEventListener("click", () => {
@@ -319,13 +313,11 @@ function clearNavigationRoute() {
 }
 
 function switchFloorTab(floor) {
-  // --- RESET STANU ZAZNACZENIA ---
   hideActionBubble();
   selectedStoreId = null;
   mapState.scale = 0.88;
   updateMapTransform();
 
-  // --- DOTYCHCZASOWA LOGIKA ---
   currentActiveFloor = floor;
   document.querySelectorAll(".floor-btn").forEach(btn => {
     const f = parseInt(btn.getAttribute("data-floor"), 10);
@@ -340,8 +332,8 @@ function initFloorNavigation() {
   floorButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       const floor = parseInt(btn.getAttribute("data-floor"), 10);
-      hideActionBubble();       // ← NOWE
-      selectedStoreId = null;   // ← NOWE
+      hideActionBubble();
+      selectedStoreId = null;
       dismissActiveRoute();
       switchFloorTab(floor);
     });
@@ -349,9 +341,9 @@ function initFloorNavigation() {
 
   const whereBtn = document.getElementById("btn-where-am-i");
   whereBtn.addEventListener("click", () => {
-    hideActionBubble();         // ← NOWE
-    selectedStoreId = null;     // ← NOWE
-    dismissActiveRoute();       // ← NOWE (spójność z przyciskami pięter)
+    hideActionBubble();
+    selectedStoreId = null;
+    dismissActiveRoute();
 
     whereBtn.classList.add("active");
     setTimeout(() => whereBtn.classList.remove("active"), 400);
@@ -388,12 +380,10 @@ function openModuleScreen(screenId, titleText) {
   const titleEl = document.getElementById("module-screen-title");
   titleEl.innerText = titleText;
 
-  // Ukryj wszystkie widoki wewnętrzne
   document.querySelectorAll(".tab-view-content").forEach(view => {
     view.classList.add("hidden");
   });
 
-  // Pokaż właściwy widok jeśli istnieje
   const targetView = document.getElementById(`view-${screenId}`);
   if (targetView) {
     targetView.classList.remove("hidden");
@@ -407,10 +397,8 @@ function returnToGalleryMap() {
   const moduleWindow = document.getElementById("module-screen-window");
   moduleWindow.classList.add("hidden");
 
-  // Reset aktywnych przycisków górnych
   document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
 
-  // Reset aktywnych przycisków lewych i włączenie 'Plan Galerii'
   document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
   const planBtn = document.querySelector('.side-btn[data-screen="ekran_plan"]');
   if (planBtn) {
@@ -420,7 +408,6 @@ function returnToGalleryMap() {
   loggerInstance.setScreen("ekran_plan");
 }
 
-// Górna nawigacja
 function initTopSquareNavigation() {
   const topButtons = document.querySelectorAll(".top-square-btn");
   topButtons.forEach(btn => {
@@ -428,7 +415,6 @@ function initTopSquareNavigation() {
       const screenTarget = btn.getAttribute("data-screen");
       const labelText = btn.querySelector(".label").innerText.replace(/\\n/g, " ");
 
-      // Aktualizuj stany przycisków
       topButtons.forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
@@ -438,7 +424,6 @@ function initTopSquareNavigation() {
   });
 }
 
-// Lewa nawigacja
 function initSideNavigation() {
   const sideButtons = document.querySelectorAll(".side-btn");
   sideButtons.forEach(btn => {
@@ -459,6 +444,209 @@ function initSideNavigation() {
   });
 }
 
+// ========================================================
+// IMPLEMENTACJA MODUŁU: AKTUALNOŚCI (UKŁAD 2x2, CZYTAJ WIĘCEJ)
+// ========================================================
+function initNewsModule() {
+  const container = document.getElementById("news-cards-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  NEWS_DATA.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "feed-card";
+    card.setAttribute("data-aoi", `aoi_news_card_${item.id}`);
+
+    card.innerHTML = `
+      <div class="feed-thumbnail" style="background: ${item.bgGradient};">
+        <span class="feed-thumb-badge">${item.category}</span>
+        <svg class="feed-thumb-svg" viewBox="0 0 24 24"><path fill="#FFFFFF" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      </div>
+      <div class="feed-details">
+        <span class="feed-date">${item.date}</span>
+        <h3 class="feed-title">${item.title}</h3>
+        <p class="feed-desc">${item.desc}</p>
+        <button class="btn-read-more" data-aoi="btn_read_news_${item.id}" data-id="${item.id}">CZYTAJ WIĘCEJ</button>
+      </div>
+    `;
+
+    const readMoreBtn = card.querySelector(".btn-read-more");
+    readMoreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openNewsPromoModal({
+        date: item.date,
+        title: item.title,
+        badge: item.category,
+        bgGradient: item.bgGradient,
+        fullText: item.fullText
+      });
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// ========================================================
+// IMPLEMENTACJA MODUŁU: PROMOCJE (IDENTYCZNY UKŁAD 2x2)
+// ========================================================
+function initPromoModule() {
+  const container = document.getElementById("promo-cards-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  PROMO_DATA.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "feed-card";
+    card.setAttribute("data-aoi", `aoi_promo_card_${item.id}`);
+
+    card.innerHTML = `
+      <div class="feed-thumbnail" style="background: ${item.bgGradient};">
+        <span class="feed-thumb-badge">${item.category}</span>
+        <svg class="feed-thumb-svg" viewBox="0 0 24 24"><path fill="#FFFFFF" d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+      </div>
+      <div class="feed-details">
+        <span class="feed-date">${item.date}</span>
+        <div class="feed-store-tag">Salony: ${item.store}</div>
+        <h3 class="feed-title">${item.title}</h3>
+        <p class="feed-desc">${item.desc}</p>
+        <button class="btn-read-more" data-aoi="btn_read_promo_${item.id}" data-id="${item.id}">CZYTAJ WIĘCEJ</button>
+      </div>
+    `;
+
+    const readMoreBtn = card.querySelector(".btn-read-more");
+    readMoreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openNewsPromoModal({
+        date: item.date,
+        title: `${item.store} — ${item.title}`,
+        badge: item.category,
+        bgGradient: item.bgGradient,
+        fullText: item.fullText
+      });
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// ========================================================
+// IMPLEMENTACJA MODUŁU: KOMUNIKACJA (2 KOLUMNY, ROZKŁAD)
+// ========================================================
+function initTransitModule() {
+  renderTransitStopsList();
+  renderTransitLinesList(selectedStopId);
+  renderTransitSchedule(selectedStopId, selectedLineNum);
+}
+
+function renderTransitStopsList() {
+  const container = document.getElementById("transit-stops-list");
+  if (!container) return;
+  container.innerHTML = "";
+
+  TRANSIT_DATA.forEach(stop => {
+    const btn = document.createElement("button");
+    btn.className = `transit-stop-btn ${stop.stopId === selectedStopId ? "active" : ""}`;
+    btn.setAttribute("data-aoi", `btn_transit_stop_${stop.stopId}`);
+    btn.innerHTML = `
+      <span>📍 ${stop.stopName}</span>
+      <span class="badge-count">${stop.lines.length} linie</span>
+    `;
+
+    btn.addEventListener("click", () => {
+      selectedStopId = stop.stopId;
+      selectedLineNum = stop.lines[0].num;
+      renderTransitStopsList();
+      renderTransitLinesList(selectedStopId);
+      renderTransitSchedule(selectedStopId, selectedLineNum);
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+function renderTransitLinesList(stopId) {
+  const container = document.getElementById("transit-lines-list");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
+  if (!stopData) return;
+
+  stopData.lines.forEach(line => {
+    const card = document.createElement("div");
+    card.className = `transit-line-card ${line.num === selectedLineNum ? "active" : ""}`;
+    card.setAttribute("data-aoi", `card_transit_line_${line.num}`);
+
+    card.innerHTML = `
+      <div class="transit-line-num">${line.num}</div>
+      <div class="transit-line-route">
+        <span class="transit-route-stop">${line.stop}</span>
+        <span class="transit-route-arrow">➔</span>
+        <span class="transit-route-dest">${line.dest}</span>
+      </div>
+    `;
+
+    card.addEventListener("click", () => {
+      selectedLineNum = line.num;
+      renderTransitLinesList(stopId);
+      renderTransitSchedule(stopId, selectedLineNum);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function renderTransitSchedule(stopId, lineNum) {
+  const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
+  if (!stopData) return;
+  const lineData = stopData.lines.find(l => l.num === lineNum) || stopData.lines[0];
+  if (!lineData) return;
+
+  document.getElementById("selected-line-badge").innerText = lineData.num;
+  document.getElementById("selected-stop-name").innerText = `Przystanek: ${lineData.stop}`;
+  document.getElementById("selected-dest-name").innerText = `Kierunek: ${lineData.dest}`;
+
+  const tbody = document.getElementById("transit-schedule-body");
+  tbody.innerHTML = "";
+
+  lineData.schedule.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="td-hour">${row.hour}:00</td>
+      <td class="td-minutes">${row.mins}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ========================================================
+// OKNO MODALNE DLA ARTYKUŁÓW I PROMOCJI
+// ========================================================
+function initNewsPromoModalEvents() {
+  const modal = document.getElementById("news-promo-modal");
+  const closeTop = document.getElementById("btn-close-news-modal");
+  const closeBottom = document.getElementById("btn-close-news-modal-bottom");
+
+  const closeModal = () => modal.classList.add("hidden");
+  closeTop.addEventListener("click", closeModal);
+  closeBottom.addEventListener("click", closeModal);
+}
+
+function openNewsPromoModal(data) {
+  const modal = document.getElementById("news-promo-modal");
+  document.getElementById("news-modal-date").innerText = data.date;
+  document.getElementById("news-modal-title").innerText = data.title;
+  document.getElementById("news-modal-badge").innerText = data.badge;
+  document.getElementById("news-modal-img").style.background = data.bgGradient;
+  document.getElementById("news-modal-text").innerText = data.fullText;
+
+  modal.classList.remove("hidden");
+  loggerInstance.logEvent("MODAL_OPEN_NEWS_PROMO", null, { title: data.title });
+}
+
+// ========================================================
+// MODAL SKLEPÓW (NAWIGACJA Z MAPY)
+// ========================================================
 function initActionBubbleAndModal() {
   const btnShowRoute = document.getElementById("btn-show-route");
   const btnShowModal = document.getElementById("btn-show-modal");

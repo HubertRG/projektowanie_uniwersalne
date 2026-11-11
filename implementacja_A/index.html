@@ -8,20 +8,14 @@
 </head>
 <body>
   <div id="kiosk-app">
-    <!-- PEŁNOEKRANOWY VIEWPORT MAPY (MAPA ZAJMUJE CAŁY EKRAN I MOŻE WJEŻDŻAĆ POD PRZYCISKI) -->
+    <!-- PEŁNOEKRANOWY VIEWPORT MAPY -->
     <div id="map-viewport" data-aoi="map_container">
       <div id="map-stage">
-        <!-- CIEMNOSZARA BRYŁA GALERII -->
         <div id="building-base">
           <div id="corridor-layer" class="corridor-layer"></div>
-
-          <!-- SIATKA SKLEPÓW (PUZZLE) -->
           <div id="stores-puzzle-grid" class="puzzle-grid"></div>
-
-          <!-- PUNKTY INFRASTRUKTURY NA MAPIE -->
           <div id="map-amenities-layer" class="amenities-layer"></div>
 
-          <!-- WARSTWA SVG DLA TRAS -->
           <svg id="nav-path-svg" class="nav-overlay" viewBox="0 0 1000 700">
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -31,24 +25,23 @@
             <path id="route-line" d="" fill="none" stroke="#D32F2F" stroke-width="6" stroke-dasharray="10 8" />
           </svg>
 
-          <!-- PINEZKA INFOMATU (TYLKO PIĘTRO 1, CENTRUM) -->
+          <!-- PINEZKA INFOMATU (TYLKO PIĘTRO 1) -->
           <div id="you-are-here-pin" class="infomat-pin" data-aoi="you_are_here_pin">
             <div class="pin-marker">
               <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
             </div>
             <div class="pin-text">TU JESTEŚ (INFOMAT)</div>
           </div>
-
-          
         </div>
+
         <!-- PŁYWAJĄCA CHMURKA AKCJI PO KLIKNIĘCIU SKLEPU -->
-          <div id="store-action-bubble" class="action-bubble hidden" data-aoi="store_actions_bubble">
-            <span id="bubble-store-name" class="bubble-title">Sklep</span>
-            <div class="bubble-buttons">
-              <button id="btn-show-route" class="bubble-btn" data-aoi="btn_bubble_route">Pokaż drogę</button>
-              <button id="btn-show-modal" class="bubble-btn" data-aoi="btn_bubble_info">O sklepie</button>
-            </div>
+        <div id="store-action-bubble" class="action-bubble hidden" data-aoi="store_actions_bubble">
+          <span id="bubble-store-name" class="bubble-title">Sklep</span>
+          <div class="bubble-buttons">
+            <button id="btn-show-route" class="bubble-btn" data-aoi="btn_bubble_route">Pokaż drogę</button>
+            <button id="btn-show-modal" class="bubble-btn" data-aoi="btn_bubble_info">O sklepie</button>
           </div>
+        </div>
       </div>
     </div>
 
@@ -68,7 +61,7 @@
       <span id="route-banner-text">Trasa do ruchomych schodów...</span>
     </div>
 
-    <!-- DOLNE STEROWANIE PIĘTRAMI (WISZĄCE NAD MAPĄ) -->
+    <!-- DOLNE STEROWANIE PIĘTRAMI -->
     <footer id="bottom-controls" data-aoi="floor_controls">
       <div class="floor-group">
         <button class="floor-btn" data-floor="0" data-aoi="btn_floor_0">Piętro 0</button>
@@ -83,7 +76,7 @@
       </button>
     </footer>
 
-    <!-- PRAWY PANEL SYMBOLI (WISZĄCY NAD MAPĄ) -->
+    <!-- PRAWY PANEL SYMBOLI (LEGENDA) -->
     <aside id="side-symbols-right" class="side-symbols" data-aoi="symbols_legend">
       <div class="symbol-card" data-aoi="sym_stairs">
         <div class="symbol-icon">
@@ -122,10 +115,6 @@
         <span class="symbol-label">Automat<br>parkingowy</span>
       </div>
     </aside>
-
-    <!-- ========================================================
-         GŁÓWNE ZAKŁADKI INTERFEJSU (GÓRA I LEWO)
-         ======================================================== -->
 
     <!-- GÓRNY PASEK ZAKŁADEK -->
     <header id="top-header" data-aoi="header_bar">
@@ -214,71 +203,196 @@
     </aside>
 
     <!-- ========================================================
-         OKNO POZOSTAŁYCH EKRANÓW (PO NACIŚNIĘCIU ZAKŁADKI)
-         - Położenie: pod górnym paskiem, na prawo od lewego menu,
-           prawa i dolna krawędź dochodzą do samego brzegu ekranu.
-         - Czerwony "X" w prawym górnym rogu zamyka okno i wraca do mapy.
+         OKNO MODUŁOWE POZOSTAŁYCH EKRANÓW (POD GÓRĄ, OBOK LEWEJ)
          ======================================================== -->
     <div id="module-screen-window" class="module-window hidden" data-aoi="module_screen_window">
-      <!-- CZERWONY PRZYCISK ZAMKNIĘCIA 'X' W PRAWYM GÓRNYM ROGU -->
       <button id="btn-close-screen-window" class="screen-close-red-x" data-aoi="btn_close_screen_window" title="Wróć do mapy galerii">✕</button>
 
-      <!-- NAGŁÓWEK OKNA Z TYTUŁEM ZAKŁADKI -->
       <header class="module-header">
         <h2 id="module-screen-title" class="module-title">Tytuł Zakładki</h2>
       </header>
 
-      <!-- TREŚĆ EKRANU / KONTENERY DLA POSZCZEGÓLNYCH ZAKŁADEK -->
       <div id="module-screen-body" class="module-body">
-        <!-- Widok: Sklepy -->
+        <!-- Widok: AKTUALNOŚCI (Siatka 2x2 z miniaturką, datą, tytułem, przyciskiem Czytaj więcej i suwakiem z prawej) -->
+        <div id="view-ekran_aktualnosci" class="tab-view-content hidden full-screen-view">
+          <div class="cards-scroll-container custom-scrollbar" id="news-cards-container" data-aoi="news_cards_scroll">
+            <!-- Kafelki generowane dynamicznie w układzie 2 kolumn -->
+          </div>
+        </div>
+
+        <!-- Widok: PROMOCJE (Wygląd identyczny do aktualności, dotyczy rabatów w określonych sklepach) -->
+        <div id="view-ekran_promocje" class="tab-view-content hidden full-screen-view">
+          <div class="cards-scroll-container custom-scrollbar" id="promo-cards-container" data-aoi="promo_cards_scroll">
+            <!-- Kafelki generowane dynamicznie w układzie 2 kolumn -->
+          </div>
+        </div>
+
+        <!-- Widok: KOMUNIKACJA (2 kolumny: lewa = linie i wybór przystanku; prawa = nagłówek i rozkład odjazdów) -->
+        <div id="view-ekran_komunikacja" class="tab-view-content hidden full-screen-view">
+          <div class="transit-container" data-aoi="transit_container">
+            <!-- Lewa kolumna: Lista linii (góra) i Przystanki w pobliżu (dół) -->
+            <div class="transit-col-left">
+              <div class="transit-box lines-box">
+                <h3 class="transit-box-title">LINIE AUTOBUSOWE</h3>
+                <div class="transit-lines-list custom-scrollbar" id="transit-lines-list" data-aoi="transit_lines_list">
+                  <!-- Dynamicznie: NR LINII  przystanek  -> kierunek -->
+                </div>
+              </div>
+
+              <div class="transit-box stops-box">
+                <h3 class="transit-box-title">POBLISKIE PRZYSTANKI (FILTRUJ)</h3>
+                <div class="transit-stops-list" id="transit-stops-list" data-aoi="transit_stops_list">
+                  <!-- Przyciski wyboru przystanku -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Prawa kolumna: Szczegóły wybranej linii i rozkład odjazdów (Godziny | Minuty) -->
+            <div class="transit-col-right">
+              <div class="transit-selected-header" id="transit-selected-header" data-aoi="transit_selected_header">
+                <div class="transit-line-badge" id="selected-line-badge">115</div>
+                <div class="transit-selected-info">
+                  <div class="transit-sel-stop" id="selected-stop-name">Przystanek: Galeria Handlowa 01</div>
+                  <div class="transit-sel-dest" id="selected-dest-name">Kierunek: Dworzec Główny PKP</div>
+                </div>
+              </div>
+
+              <div class="transit-schedule-wrapper custom-scrollbar" data-aoi="transit_schedule_table">
+                <table class="schedule-table">
+                  <thead>
+                    <tr>
+                      <th class="th-hour">Godzina</th>
+                      <th class="th-minutes">Minuty odjazdu</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transit-schedule-body">
+                    <!-- Dynamiczny rozkład 2-kolumnowy -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widok: PARKING (2 kolumny: lewa = cennik i uwagi; prawa = przewijany regulamin) -->
+        <div id="view-ekran_parking" class="tab-view-content hidden full-screen-view">
+          <div class="parking-container" data-aoi="parking_container">
+            <!-- Lewa kolumna: Cennik i Uwagi -->
+            <div class="parking-col-left">
+              <div class="parking-card pricing-card">
+                <h3 class="parking-card-title">CENNIK PARKINGU PODZIEMNEGO</h3>
+                <table class="pricing-table">
+                  <tbody>
+                    <tr>
+                      <td>Pierwsza godzina (1h):</td>
+                      <td class="price-val free">BEZPŁATNIE (0 zł)</td>
+                    </tr>
+                    <tr>
+                      <td>Druga godzina (2h):</td>
+                      <td class="price-val">4,00 zł</td>
+                    </tr>
+                    <tr>
+                      <td>Trzecia godzina (3h):</td>
+                      <td class="price-val">5,00 zł</td>
+                    </tr>
+                    <tr>
+                      <td>Każda kolejna rozpoczęta godzina:</td>
+                      <td class="price-val">6,00 zł</td>
+                    </tr>
+                    <tr>
+                      <td>Klienci Cinema City (po okazaniu biletu):</td>
+                      <td class="price-val promo">Dodatkowe +2h GRATIS</td>
+                    </tr>
+                    <tr>
+                      <td>Klienci Klubu Fitness CityFit:</td>
+                      <td class="price-val promo">Do 3h BEZPŁATNIE</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="parking-card notices-card">
+                <h3 class="parking-card-title">WAŻNE INFORMACJE I UWAGI</h3>
+                <ul class="parking-notices-list">
+                  <li><strong>Czas na opuszczenie parkingu:</strong> Po dokonaniu opłaty w automatycznej kasie biletowej przysługuje <strong>15 minut</strong> na bezkolizyjny wyjazd z parkingu.</li>
+                  <li><strong>Maksymalna opłata dobowa:</strong> Wynosi <strong>60,00 zł</strong> za każdą rozpoczętą dobę postoju.</li>
+                  <li><strong>Zgubienie biletu parkingowego:</strong> Opłata karna za zagubienie lub zniszczenie biletu wynosi <strong>50,00 zł</strong> plus koszt faktycznego czasu parkowania.</li>
+                  <li><strong>Płatności:</strong> Kasy parkingowe przy wyjściach przyjmują płatność kartami płatniczymi, BLIK-iem oraz gotówką (bilon i banknoty).</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Prawa kolumna: Przewijany regulamin -->
+            <div class="parking-col-right">
+              <div class="parking-card rules-card">
+                <h3 class="parking-card-title">REGULAMIN KORZYSTANIA Z PARKINGU</h3>
+                <div class="rules-scroll-area custom-scrollbar" data-aoi="parking_rules_scroll">
+                  <h4>§ 1. Postanowienia ogólne</h4>
+                  <p>1. Parking jest parkingiem niestrzeżonym, płatnym, czynnym 24 godziny na dobę przez 7 dni w tygodniu.</p>
+                  <p>2. Poprzez wjazd na teren parkingu użytkownik pojazdu zawiera umowę najmu miejsca postojowego na warunkach określonych w niniejszym Regulaminie.</p>
+                  <p>3. Każdy użytkownik pojazdu zobowiązany jest do pobrania biletu parkingowego przy wjeździe lub aktywacji wjazdu aplikacją mobilną.</p>
+
+                  <h4>§ 2. Zasady ruchu i bezpieczeństwa</h4>
+                  <p>1. Na terenie parkingu obowiązują przepisy Ustawy z dnia 20 czerwca 1997 r. – Prawo o ruchu drogowym oraz ograniczenie prędkości do 10 km/h.</p>
+                  <p>2. Obowiązuje bezwzględny zakaz parkowania pojazdów poza wyznaczonymi miejscami postojowymi, na drogach pożarowych oraz w strefach dla pieszych.</p>
+                  <p>3. Miejsca dla osób z niepełnosprawnościami są zastrzeżone wyłącznie dla pojazdów posiadających ważną kartę parkingową umieszczoną w widocznym miejscu za przednią szybą.</p>
+                  <p>4. Miejsca dedykowane rodzinom z dziećmi są oznaczone piktogramami i przeznaczone dla opiekunów podróżujących z dziećmi do lat 7.</p>
+
+                  <h4>§ 3. Odpowiedzialność i nadzór</h4>
+                  <p>1. Zarządca Parkingu nie ponosi odpowiedzialności za kradzież pojazdów, ich wyposażenia ani rzeczy pozostawionych wewnątrz pojazdu.</p>
+                  <p>2. Użytkownik odpowiada za wszelkie szkody wyrządzone Zarządcy lub osobom trzecim na terenie parkingu na zasadach ogólnych Kodeksu Cywilnego.</p>
+                  <p>3. Pojazdy zagrażające bezpieczeństwu, blokujące wyjazd lub drogę pożarową mogą zostać odholowane na koszt i ryzyko właściciela.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pozostałe widoki górne -->
         <div id="view-ekran_sklepy" class="tab-view-content hidden">
           <p class="placeholder-text">Katalog i spis sklepów galerii handlowej według kategorii i pięter.</p>
         </div>
-
-        <!-- Widok: Restauracje i Kawiarnie -->
         <div id="view-ekran_restauracje" class="tab-view-content hidden">
           <p class="placeholder-text">Strefa gastronomiczna — kawiarnie, restauracje oraz dania szybkiej obsługi.</p>
         </div>
-
-        <!-- Widok: Klub Fitness -->
         <div id="view-ekran_fitness" class="tab-view-content hidden">
           <p class="placeholder-text">Informacje o klubie CityFit, godziny wstępu, strefy treningowe oraz karnety.</p>
         </div>
-
-        <!-- Widok: Usługi -->
         <div id="view-ekran_uslugi" class="tab-view-content hidden">
           <p class="placeholder-text">Punkty usługowe: kantor, dorabianie kluczy, pralnia, salony optyczne i telekomunikacja.</p>
         </div>
-
-        <!-- Widok: Repertuar Kina -->
         <div id="view-ekran_kino" class="tab-view-content hidden">
           <p class="placeholder-text">Aktualny repertuar Cinema City, godziny seansów oraz zapowiedzi premier.</p>
         </div>
-
-        <!-- Widok: Szukaj -->
         <div id="view-ekran_szukaj" class="tab-view-content hidden">
           <p class="placeholder-text">Wyszukiwarka sklepów, marek, promocji i usług dostępnych w centrum.</p>
         </div>
+      </div>
+    </div>
 
-        <!-- Widok: Aktualności -->
-        <div id="view-ekran_aktualnosci" class="tab-view-content hidden">
-          <p class="placeholder-text">Wydarzenia, otwarcia nowych lokali i komunikaty zarządu galerii.</p>
+    <!-- OKNO MODALNE ZE SZCZEGÓŁAMI ARTYKUŁU / PROMOCJI (CZYTAJ WIĘCEJ) -->
+    <div id="news-promo-modal" class="modal-backdrop hidden" data-aoi="modal_news_promo_details">
+      <div class="modal-window news-modal-window">
+        <header class="modal-header">
+          <div class="modal-header-titles">
+            <span id="news-modal-date" class="news-modal-date">05.11.2026</span>
+            <h2 id="news-modal-title">Tytuł Artykułu lub Promocji</h2>
+          </div>
+          <button id="btn-close-news-modal" class="modal-close" data-aoi="btn_close_news_modal">✕</button>
+        </header>
+        <div class="modal-body news-modal-body">
+          <div class="news-modal-image-col">
+            <div id="news-modal-img" class="news-modal-img-box">
+              <span id="news-modal-badge" class="news-modal-badge">PROMOCJA</span>
+            </div>
+          </div>
+          <div class="news-modal-content-col custom-scrollbar">
+            <p id="news-modal-text" class="news-modal-text">Pełna treść komunikatu prasowego, regulaminu promocji lub aktualności...</p>
+          </div>
         </div>
-
-        <!-- Widok: Promocje -->
-        <div id="view-ekran_promocje" class="tab-view-content hidden">
-          <p class="placeholder-text">Zestawienie aktualnych rabatów, zniżek i ofert specjalnych we wszystkich salonach.</p>
-        </div>
-
-        <!-- Widok: Komunikacja -->
-        <div id="view-ekran_komunikacja" class="tab-view-content hidden">
-          <p class="placeholder-text">Dojazd do galerii: linie autobusowe, tramwajowe, rozkład jazdy oraz postoje taxi.</p>
-        </div>
-
-        <!-- Widok: Parking -->
-        <div id="view-ekran_parking" class="tab-view-content hidden">
-          <p class="placeholder-text">System parkingowy: liczba wolnych miejsc, cennik, regulamin i lokalizacja kas automatycznych.</p>
-        </div>
+        <footer class="modal-actions">
+          <button id="btn-close-news-modal-bottom" class="kiosk-action-btn" data-aoi="btn_modal_news_close">Zamknij</button>
+        </footer>
       </div>
     </div>
 
@@ -322,6 +436,7 @@
   </div>
 
   <script src="js/stores-data.js"></script>
+  <script src="js/data.js"></script>
   <script src="js/logger.js"></script>
   <script src="js/app.js"></script>
 </body>
