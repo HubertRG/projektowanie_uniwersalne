@@ -1,9 +1,14 @@
 /**
- * Główny kontroler aplikacji infomatu (v5):
- * - Implementacja ekranów: Aktualności (siatka 2x2, suwak, modal), Promocje (siatka 2x2, suwak, modal),
- *   Komunikacja (2 kolumny, filtrowanie po przystankach, rozkład godzinowy), Parking (2 kolumny, cennik, uwagi, regulamin).
- * - Czerwony 'X' zamykający okno i powracający do planu galerii.
- * - Pełna integracja z rejestratorem eyetrackera dla wszystkich zdarzeń (kliknięcia w kafelki, przystanki, linie, modal).
+ * Główny kontroler aplikacji infomatu (v6):
+ * - Pełna implementacja górnych zakładek:
+ *   1. SKLEPY: 2 kolumny (kategorie z lewej, kafelki sklepów z logiem i nazwą z prawej).
+ *   2. RESTAURACJE I KAWIARNIE: kafelki 4 kolumny x 3 wiersze z logiem i nazwą.
+ *   3. KLUB FITNESS: 2 kolumny (logo, kontakt, godziny z lewej; opis i organizacja z prawej).
+ *   4. USŁUGI: kafelki 4 kolumny x 3 wiersze z logiem i nazwą.
+ *   5. REPERTUAR KINA: 2 kolumny (tytuł filmu | godziny seansów + pojedynczy napis DUBBING).
+ *   6. SZUKAJ: lewa ~3/4 (pole tekstowe + klawiatura ekranowa), prawa (proponowane wyniki na żywo).
+ * - Kliknięcie w dowolny sklep przenosi bezpośrednio na mapę, ustawia piętro i podświetla lokal.
+ * - Zachowanie modułów dolnych (Aktualności, Promocje, Komunikacja, Parking).
  */
 
 let loggerInstance = null;
@@ -19,6 +24,10 @@ let mapState = {
   startX: 0,
   startY: 0
 };
+
+// Stan wyszukiwarki
+let currentSearchQuery = "";
+let currentStoreCategoryFilter = "ALL";
 
 let selectedStopId = "stop_galeria_01";
 let selectedLineNum = "115";
@@ -38,7 +47,14 @@ document.addEventListener("DOMContentLoaded", () => {
   initRouteDismissButton();
   initResearcherDock();
 
-  // Inicjalizacja treści modułów
+  // Inicjalizacja górnych zakładek
+  initStoresDirectoryModule();
+  initRestaurantsGridModule();
+  initServicesGridModule();
+  initCinemaRepertoireModule();
+  initSearchModule();
+
+  // Inicjalizacja bocznych zakładek
   initNewsModule();
   initPromoModule();
   initTransitModule();
@@ -398,8 +414,8 @@ function returnToGalleryMap() {
   moduleWindow.classList.add("hidden");
 
   document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
-
   document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
+
   const planBtn = document.querySelector('.side-btn[data-screen="ekran_plan"]');
   if (planBtn) {
     planBtn.classList.add("active");
@@ -445,7 +461,347 @@ function initSideNavigation() {
 }
 
 // ========================================================
-// IMPLEMENTACJA MODUŁU: AKTUALNOŚCI (UKŁAD 2x2, CZYTAJ WIĘCEJ)
+// PRZEJŚCIE Z KAFELKA DO MAPY Z PODŚWIETLONYM SKLEPEM
+// ========================================================
+function navigateToStoreOnMap(storeId) {
+  const store = STORES_CATALOG.find(s => s.id === storeId);
+  if (!store) return;
+
+  // 1. Zamknij okno modułowe
+  returnToGalleryMap();
+
+  // 2. Jeśli sklep jest na innym piętrze, przełącz piętro
+  if (currentActiveFloor !== store.floor) {
+    switchFloorTab(store.floor);
+  }
+
+  // 3. Zaznacz sklep i przybliż
+  setTimeout(() => {
+    const storeEl = document.getElementById(`store-${store.id}`);
+    if (storeEl) {
+      handleStoreClick(store);
+    }
+  }, 100);
+
+  loggerInstance.logEvent("NAVIGATE_STORE_FROM_TAB", null, { storeId: storeId, storeName: store.name });
+}
+
+// ========================================================
+// GÓRNA ZAKŁADKA 1: SKLEPY (2 KOLUMNY: KATEGORIE + KAFELKI)
+// ========================================================
+function initStoresDirectoryModule() {
+  const categoriesContainer = document.getElementById("stores-categories-list");
+  const catalogGrid = document.getElementById("stores-catalog-grid");
+  if (!categoriesContainer || !catalogGrid) return;
+
+  // Wyodrębnij unikalne kategorie
+  const allCategories = Array.from(new Set(STORES_CATALOG.map(s => s.category))).sort();
+
+  // Renderowanie listy kategorii
+  categoriesContainer.innerHTML = "";
+
+  // Przycisk "Wszystkie kategorie"
+  const allBtn = document.createElement("button");
+  allBtn.className = "category-filter-btn active";
+  allBtn.setAttribute("data-aoi", "btn_cat_all");
+  allBtn.innerHTML = `
+    <span>Wszystkie</span>
+    <span class="cat-count-badge">${STORES_CATALOG.length}</span>
+  `;
+  allBtn.addEventListener("click", () => {
+    document.querySelectorAll(".category-filter-btn").forEach(b => b.classList.remove("active"));
+    allBtn.classList.add("active");
+    currentStoreCategoryFilter = "ALL";
+    renderFilteredStoresCatalog("ALL");
+  });
+  categoriesContainer.appendChild(allBtn);
+
+  allCategories.forEach(cat => {
+    const count = STORES_CATALOG.filter(s => s.category === cat).length;
+    const btn = document.createElement("button");
+    btn.className = "category-filter-btn";
+    btn.setAttribute("data-aoi", `btn_cat_${cat}`);
+    btn.innerHTML = `
+      <span>${cat}</span>
+      <span class="cat-count-badge">${count}</span>
+    `;
+
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".category-filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentStoreCategoryFilter = cat;
+      renderFilteredStoresCatalog(cat);
+    });
+
+    categoriesContainer.appendChild(btn);
+  });
+
+  renderFilteredStoresCatalog("ALL");
+}
+
+function renderFilteredStoresCatalog(category) {
+  const catalogGrid = document.getElementById("stores-catalog-grid");
+  const labelEl = document.getElementById("stores-active-cat-label");
+  catalogGrid.innerHTML = "";
+
+  const filteredStores = category === "ALL" 
+    ? STORES_CATALOG 
+    : STORES_CATALOG.filter(s => s.category === category);
+
+  labelEl.innerText = category === "ALL" ? `Wszystkie sklepy (${filteredStores.length})` : `${category} (${filteredStores.length})`;
+
+  filteredStores.forEach(store => {
+    const card = document.createElement("div");
+    card.className = "store-dir-card";
+    card.setAttribute("data-aoi", `card_store_dir_${store.id}`);
+
+    card.innerHTML = `
+      <div class="store-dir-logo-box">${store.name.substring(0, 10)}</div>
+      <div class="store-dir-name">${store.name}</div>
+      <div class="store-dir-floor">Poziom ${store.floor} • ${store.category}</div>
+    `;
+
+    card.addEventListener("click", () => {
+      navigateToStoreOnMap(store.id);
+    });
+
+    catalogGrid.appendChild(card);
+  });
+}
+
+// ========================================================
+// GÓRNA ZAKŁADKA 2: RESTAURACJE I KAWIARNIE (4 KOLUMNY x 3 WIERSZE)
+// ========================================================
+function initRestaurantsGridModule() {
+  const container = document.getElementById("restaurants-grid");
+  if (!container) return;
+  container.innerHTML = "";
+
+  // Pobierz restauracje i kawiarnie
+  const gastroCategories = ["Kawiarnia", "Lody", "Gastronomia", "Gastro", "Kawiarnia/Lody", "Piekarnia", "Herbata"];
+  const restaurants = STORES_CATALOG.filter(s => gastroCategories.includes(s.category));
+
+  restaurants.forEach(store => {
+    const card = document.createElement("div");
+    card.className = "grid-tile-card";
+    card.setAttribute("data-aoi", `card_gastro_${store.id}`);
+
+    card.innerHTML = `
+      <div class="grid-tile-logo-box">${store.name.substring(0, 12)}</div>
+      <div class="grid-tile-name">${store.name}</div>
+      <div class="grid-tile-cat">${store.category}</div>
+      <div class="grid-tile-floor">Lokalizacja: Poziom ${store.floor}</div>
+    `;
+
+    card.addEventListener("click", () => {
+      navigateToStoreOnMap(store.id);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// ========================================================
+// GÓRNA ZAKŁADKA 4: USŁUGI (4 KOLUMNY x 3 WIERSZE)
+// ========================================================
+function initServicesGridModule() {
+  const container = document.getElementById("services-grid");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const serviceCategories = ["Usługi", "Finanse", "Bankowość", "Telekomunikacja", "GSM", "Optyk", "Zdrowie", "Podróże", "Upominki", "Kwiaty"];
+  const services = STORES_CATALOG.filter(s => serviceCategories.includes(s.category));
+
+  services.forEach(store => {
+    const card = document.createElement("div");
+    card.className = "grid-tile-card";
+    card.setAttribute("data-aoi", `card_service_${store.id}`);
+
+    card.innerHTML = `
+      <div class="grid-tile-logo-box">${store.name.substring(0, 12)}</div>
+      <div class="grid-tile-name">${store.name}</div>
+      <div class="grid-tile-cat">${store.category}</div>
+      <div class="grid-tile-floor">Lokalizacja: Poziom ${store.floor}</div>
+    `;
+
+    card.addEventListener("click", () => {
+      navigateToStoreOnMap(store.id);
+    });
+
+    container.appendChild(card);
+  });
+
+  // Dodatkowa obsługa przycisku w zakładce Fitness
+  const locateFitnessBtn = document.querySelector(".locate-store-btn");
+  if (locateFitnessBtn) {
+    locateFitnessBtn.addEventListener("click", () => {
+      navigateToStoreOnMap("s2_cityfit");
+    });
+  }
+
+  const locateCinemaBtn = document.querySelector(".locate-cinema-btn");
+  if (locateCinemaBtn) {
+    locateCinemaBtn.addEventListener("click", () => {
+      navigateToStoreOnMap("s2_cinema");
+    });
+  }
+}
+
+// ========================================================
+// GÓRNA ZAKŁADKA 5: REPERTUAR KINA (2 KOLUMNY, DUBBING)
+// ========================================================
+function initCinemaRepertoireModule() {
+  const tbody = document.getElementById("cinema-repertoire-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  CINEMA_REPERTOIRE_DATA.forEach(movie => {
+    const tr = document.createElement("tr");
+    tr.setAttribute("data-aoi", `cinema_row_${movie.title.replace(/\\s+/g, "_")}`);
+
+    const hoursHtml = movie.hours.map(h => `<span class="seance-chip">${h}</span>`).join("");
+    const dubbingHtml = movie.dubbing 
+      ? `<span class="dubbing-badge">DUBBING</span>` 
+      : `<span class="subtitles-badge">NAPISY</span>`;
+
+    tr.innerHTML = `
+      <td>
+        <div class="td-movie-info">
+          <span class="movie-title-text">${movie.title}</span>
+          <span class="movie-meta-text">${movie.genre} • Czas trwania: ${movie.duration}</span>
+        </div>
+      </td>
+      <td>
+        <div class="seances-cell">
+          <div class="seance-hours-group">${hoursHtml}</div>
+          ${dubbingHtml}
+        </div>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+// ========================================================
+// GÓRNA ZAKŁADKA 6: SZUKAJ (KLAWIATURA EKRANOWA + PROPOZYCJE NA ŻYWO)
+// ========================================================
+function initSearchModule() {
+  const keyboardWrapper = document.getElementById("onscreen-keyboard");
+  const inputEl = document.getElementById("virtual-search-input");
+  const clearBtn = document.getElementById("btn-clear-search");
+  if (!keyboardWrapper || !inputEl) return;
+
+  // Układ klawiatury ekranowej z polskimi znakami
+  const keyboardLayout = [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+    ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ł"],
+    ["Z", "X", "C", "V", "B", "N", "M", "Ą", "Ę", "Ó"],
+    ["Ś", "Ć", "Ż", "Ź", "Ń", "SPACJA", "COFNIJ"]
+  ];
+
+  keyboardWrapper.innerHTML = "";
+
+  keyboardLayout.forEach(rowKeys => {
+    const rowEl = document.createElement("div");
+    rowEl.className = "keyboard-row";
+
+    rowKeys.forEach(key => {
+      const btn = document.createElement("button");
+      btn.className = "key-btn";
+      btn.setAttribute("data-aoi", `key_${key}`);
+
+      if (key === "SPACJA") {
+        btn.classList.add("key-space", "key-action");
+        btn.innerText = "SPACJA";
+        btn.addEventListener("click", () => {
+          currentSearchQuery += " ";
+          inputEl.value = currentSearchQuery;
+          updateSearchResults(currentSearchQuery);
+        });
+      } else if (key === "COFNIJ") {
+        btn.classList.add("key-backspace", "key-action");
+        btn.innerText = "⌫ COFNIJ";
+        btn.addEventListener("click", () => {
+          currentSearchQuery = currentSearchQuery.slice(0, -1);
+          inputEl.value = currentSearchQuery;
+          updateSearchResults(currentSearchQuery);
+        });
+      } else {
+        btn.innerText = key;
+        btn.addEventListener("click", () => {
+          currentSearchQuery += key;
+          inputEl.value = currentSearchQuery;
+          updateSearchResults(currentSearchQuery);
+        });
+      }
+
+      rowEl.appendChild(btn);
+    });
+
+    keyboardWrapper.appendChild(rowEl);
+  });
+
+  clearBtn.addEventListener("click", () => {
+    currentSearchQuery = "";
+    inputEl.value = "";
+    updateSearchResults("");
+  });
+
+  updateSearchResults("");
+}
+
+function updateSearchResults(query) {
+  const resultsContainer = document.getElementById("search-results-list");
+  const countBadge = document.getElementById("search-results-count");
+  if (!resultsContainer) return;
+  resultsContainer.innerHTML = "";
+
+  const cleanQuery = query.trim().toLowerCase();
+
+  const matchedStores = cleanQuery === ""
+    ? STORES_CATALOG
+    : STORES_CATALOG.filter(s => 
+        s.name.toLowerCase().includes(cleanQuery) || 
+        s.category.toLowerCase().includes(cleanQuery)
+      );
+
+  countBadge.innerText = `${matchedStores.length} lokali`;
+
+  if (matchedStores.length === 0) {
+    resultsContainer.innerHTML = `
+      <div style="text-align: center; padding: 24px; color: #777;">
+        Brak wyników dla frazy "<strong>${query}</strong>". Spróbuj wpisać inną nazwę.
+      </div>
+    `;
+    return;
+  }
+
+  matchedStores.forEach(store => {
+    const item = document.createElement("div");
+    item.className = "search-result-item";
+    item.setAttribute("data-aoi", `search_result_${store.id}`);
+
+    item.innerHTML = `
+      <div class="res-logo-box">${store.name.substring(0, 8)}</div>
+      <div class="res-info">
+        <span class="res-name">${store.name}</span>
+        <span class="res-cat">${store.category}</span>
+      </div>
+      <div class="res-floor">Poziom ${store.floor} ➔</div>
+    `;
+
+    item.addEventListener("click", () => {
+      navigateToStoreOnMap(store.id);
+    });
+
+    resultsContainer.appendChild(item);
+  });
+}
+
+// ========================================================
+// BOCZNE ZAKŁADKI: AKTUALNOŚCI, PROMOCJE, KOMUNIKACJA
 // ========================================================
 function initNewsModule() {
   const container = document.getElementById("news-cards-container");
@@ -486,9 +842,6 @@ function initNewsModule() {
   });
 }
 
-// ========================================================
-// IMPLEMENTACJA MODUŁU: PROMOCJE (IDENTYCZNY UKŁAD 2x2)
-// ========================================================
 function initPromoModule() {
   const container = document.getElementById("promo-cards-container");
   if (!container) return;
@@ -529,9 +882,6 @@ function initPromoModule() {
   });
 }
 
-// ========================================================
-// IMPLEMENTACJA MODUŁU: KOMUNIKACJA (2 KOLUMNY, ROZKŁAD)
-// ========================================================
 function initTransitModule() {
   renderTransitStopsList();
   renderTransitLinesList(selectedStopId);
@@ -619,9 +969,6 @@ function renderTransitSchedule(stopId, lineNum) {
   });
 }
 
-// ========================================================
-// OKNO MODALNE DLA ARTYKUŁÓW I PROMOCJI
-// ========================================================
 function initNewsPromoModalEvents() {
   const modal = document.getElementById("news-promo-modal");
   const closeTop = document.getElementById("btn-close-news-modal");
@@ -644,9 +991,6 @@ function openNewsPromoModal(data) {
   loggerInstance.logEvent("MODAL_OPEN_NEWS_PROMO", null, { title: data.title });
 }
 
-// ========================================================
-// MODAL SKLEPÓW (NAWIGACJA Z MAPY)
-// ========================================================
 function initActionBubbleAndModal() {
   const btnShowRoute = document.getElementById("btn-show-route");
   const btnShowModal = document.getElementById("btn-show-modal");

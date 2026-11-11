@@ -1,5 +1,60 @@
 // ========================================================
-// DANE DLA MODUŁÓW (AKTUALNOŚCI, PROMOCJE, KOMUNIKACJA)
+// REPERTUAR KINA (CINEMA CITY)
+// ========================================================
+const CINEMA_REPERTOIRE_DATA = [
+  {
+    title: "Diuna: Część Druga",
+    genre: "Sci-Fi / Przygodowy",
+    duration: "166 min",
+    dubbing: false,
+    hours: ["13:30", "16:45", "19:15", "21:30"]
+  },
+  {
+    title: "Kung Fu Panda 4",
+    genre: "Animacja / Komedia",
+    duration: "94 min",
+    dubbing: true,
+    hours: ["10:15", "12:30", "14:45", "17:00"]
+  },
+  {
+    title: "Gladiator II",
+    genre: "Dramat historyczny / Akcja",
+    duration: "148 min",
+    dubbing: false,
+    hours: ["14:00", "17:15", "20:30"]
+  },
+  {
+    title: "W głowie się nie mieści 2",
+    genre: "Animacja / Familijny",
+    duration: "100 min",
+    dubbing: true,
+    hours: ["11:00", "13:15", "15:30", "17:45"]
+  },
+  {
+    title: "Joker: Folie à Deux",
+    genre: "Dramat / Kryminał",
+    duration: "138 min",
+    dubbing: false,
+    hours: ["16:00", "18:45", "21:15"]
+  },
+  {
+    title: "Garfield",
+    genre: "Animacja / Przygodowy",
+    duration: "101 min",
+    dubbing: true,
+    hours: ["10:30", "12:45", "15:00"]
+  },
+  {
+    title: "Deadpool & Wolverine",
+    genre: "Akcja / Komedia Sci-Fi",
+    duration: "127 min",
+    dubbing: false,
+    hours: ["17:30", "20:00", "22:15"]
+  }
+];
+
+// ========================================================
+// DANE DLA AKTUALNOŚCI I PROMOCJI
 // ========================================================
 const NEWS_DATA = [
   {
@@ -65,7 +120,7 @@ const PROMO_DATA = [
     store: "Reserved",
     title: "Mid Season Sale do -50% na kolekcję jesienną",
     desc: "Skorzystaj z rabatów na kurtki, ciepłe swetry, płaszcze i akcesoria zimowe w salonie na poziomie 1.",
-    fullText: "Odwiedź salon Reserved na 1. piętrze i skorzystaj z wyjątkowej promocji sezonowej! Wybrane artykuły z kolekcji damskiej, męskiej i dziecięcej przeceniono nawet o 50%. Promocja obejmuje ciepłe kurtki zimowe, płaszcze z wełną, grube swetry i stylowe dodatki. Promocja nie łączy się z innymi kodami rabatowymi.",
+    fullText: "Odwiedź salon Reserved na 1. piętrze i skorzystaj z wyjątkowej promocji sezonowej! Wybrane artykuły z kolekcji damskiej, męskiej i dziecięcej przeceniono nawet o 50%. Promocja obejmuje ciepłe kurtki zimowe, płaszcze z wełną, grube swetry i stylowe dodatki.",
     category: "Moda",
     bgGradient: "linear-gradient(135deg, #111111, #424242)"
   },
@@ -75,7 +130,7 @@ const PROMO_DATA = [
     store: "Rossmann",
     title: "1+1 gratis na wybrane kosmetyki do pielęgnacji",
     desc: "Kup dowolny krem do twarzy objęty promocją, a drugi produkt otrzymasz za 1 grosz z aplikacją Rossmann.",
-    fullText: "Wyjątkowa oferta dla posiadaczy aplikacji Rossmann na poziomie 0. Przy zakupie dowolnego kremu pielęgnacyjnego lub serum z oznaczonej półki, drugi produkt tej samej lub tańszej marki otrzymasz za 1 grosz. Szczegóły i regulamin akcji dostępne w drogerii.",
+    fullText: "Wyjątkowa oferta dla posiadaczy aplikacji Rossmann na poziomie 0. Przy zakupie dowolnego kremu pielęgnacyjnego lub serum z oznaczonej półki, drugi produkt tej samej lub tańszej marki otrzymasz za 1 grosz.",
     category: "Drogeria",
     bgGradient: "linear-gradient(135deg, #B71C1C, #C2185B)"
   },
@@ -85,7 +140,7 @@ const PROMO_DATA = [
     store: "Komputronik",
     title: "Raty 0% i rabat 200 zł na laptopy i monitory",
     desc: "Wyposaż swoje domowe biuro lub stanowisko gracza w salonie elektroniki na poziomie 0.",
-    fullText: "Salon Komputronik (poziom 0) przygotował specjalną ofertę technologiczną. Wybrane laptopy biurowe i gamingowe oraz monitory 4K objęte są promocją 20 rat 0% bez żadnych ukrytych kosztów oraz natychmiastowym rabatem do 200 zł przy płatności kartą.",
+    fullText: "Salon Komputronik (poziom 0) przygotował specjalną ofertę technologiczną. Wybrane laptopy biurowe i gamingowe oraz monitory 4K objęte są promocją 20 rat 0% oraz natychmiastowym rabatem do 200 zł.",
     category: "Elektronika",
     bgGradient: "linear-gradient(135deg, #0D47A1, #1976D2)"
   },
@@ -95,7 +150,7 @@ const PROMO_DATA = [
     store: "CCC",
     title: "Druga para obuwia zimowego -40%",
     desc: "Kup dowolną parę butów zimowych lub kozaków, a drugą parę otrzymasz z rabatem 40% na poziomie 1.",
-    fullText: "Przygotuj całą rodzinę na chłodniejsze dni! W salonie CCC na poziomie 1 przy zakupie dwóch par butów zimowych (w tym marek Lasocki, Gino Rossi, Badura), na tańszą parę naliczany jest natychmiastowy rabat 40%.",
+    fullText: "Przygotuj całą rodzinę na chłodniejsze dni! W salonie CCC na poziomie 1 przy zakupie dwóch par butów zimowych, na tańszą parę naliczany jest natychmiastowy rabat 40%.",
     category: "Obuwie",
     bgGradient: "linear-gradient(135deg, #E65100, #F57C00)"
   },
@@ -105,7 +160,7 @@ const PROMO_DATA = [
     store: "Douglas",
     title: "Prezent do każdego zakupu zapachów luksusowych",
     desc: "Otrzymaj miniaturę luksusowych perfum i kosmetyczkę przy zakupie wód perfumowanych od 299 zł.",
-    fullText: "Perfumeria Douglas zaprasza miłośników wyrafinowanych kompozycji zapachowych. Przy zakupie dowolnego zapachu z linii luksusowej o wartości min. 299 zł otrzymasz elegancki zestaw miniatur i firmową kosmetyczkę w prezencie. Oferta ważna do wyczerpania zapasów.",
+    fullText: "Perfumeria Douglas zaprasza miłośników wyrafinowanych kompozycji zapachowych. Przy zakupie dowolnego zapachu z linii luksusowej o wartości min. 299 zł otrzymasz elegancki zestaw miniatur i firmową kosmetyczkę w prezencie.",
     category: "Perfumeria",
     bgGradient: "linear-gradient(135deg, #004D40, #00796B)"
   },

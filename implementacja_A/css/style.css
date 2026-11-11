@@ -1508,3 +1508,794 @@ html, body {
   border-color: #d32f2f;
   color: #d32f2f;
 }
+
+/* ========================================================
+   GÓRNA ZAKŁADKA 1: SKLEPY (2 KOLUMNY: KATEGORIE + KAFELKI)
+   ======================================================== */
+.stores-directory-container {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  height: 100%;
+}
+
+.stores-categories-col {
+  width: 280px;
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+.side-category-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-purple);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #EEEEEE;
+}
+
+.categories-list-scroll {
+  flex: 1;
+  overflow-y: scroll;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-filter-btn {
+  background: var(--bg-button);
+  border: 2px solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.category-filter-btn.active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+}
+
+.cat-count-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(46, 8, 84, 0.1);
+}
+
+.category-filter-btn.active .cat-count-badge {
+  background: #FFFFFF;
+  color: var(--primary-purple);
+}
+
+.stores-cards-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.stores-cards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+
+.category-active-label {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-purple);
+}
+
+.stores-count-info {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.stores-cards-grid {
+  flex: 1;
+  overflow-y: scroll;
+  padding-right: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  grid-auto-rows: 150px;
+}
+
+.store-dir-card {
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.store-dir-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(46, 8, 84, 0.18);
+}
+
+.store-dir-card:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+}
+
+.store-dir-card:active .store-dir-name,
+.store-dir-card:active .store-dir-cat {
+  color: #FFFFFF !important;
+}
+
+.store-dir-logo-box {
+  width: 60px;
+  height: 50px;
+  background: #F4F4F4;
+  border: 1px solid #CCC;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #333;
+  padding: 4px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.store-dir-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.2;
+}
+
+.store-dir-floor {
+  font-size: 11px;
+  font-weight: 700;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* ========================================================
+   GÓRNE ZAKŁADKI 2 & 4: 4 KOLUMNY x 3 WIERSZE
+   (RESTAURACJE I KAWIARNIE ORAZ USŁUGI)
+   ======================================================== */
+.grid-4x3-container {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  padding-right: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.grid-tile-card {
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.grid-tile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(46, 8, 84, 0.18);
+}
+
+.grid-tile-card:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+}
+
+.grid-tile-card:active .grid-tile-name,
+.grid-tile-card:active .grid-tile-floor,
+.grid-tile-card:active .grid-tile-cat {
+  color: #FFFFFF !important;
+}
+
+.grid-tile-logo-box {
+  width: 90px;
+  height: 70px;
+  background: #F5F5F7;
+  border: 2px dashed #BBB;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #333;
+  padding: 6px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.grid-tile-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--primary-purple);
+  margin-bottom: 4px;
+}
+
+.grid-tile-cat {
+  font-size: 12px;
+  font-weight: 700;
+  color: #D32F2F;
+  text-transform: uppercase;
+}
+
+.grid-tile-floor {
+  font-size: 12px;
+  font-weight: 700;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* ========================================================
+   GÓRNA ZAKŁADKA 3: KLUB FITNESS (2 KOLUMNY)
+   ======================================================== */
+.fitness-layout-container {
+  display: flex;
+  gap: 26px;
+  width: 100%;
+  height: 100%;
+}
+
+.fitness-col-left {
+  width: 38%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.fitness-col-right {
+  flex: 1;
+  overflow-y: scroll;
+  padding-right: 14px;
+  height: 100%;
+}
+
+.fitness-card {
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.fitness-card.brand-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.fitness-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #EEE;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.fitness-logo-box {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--primary-purple);
+  letter-spacing: 1px;
+}
+
+.fitness-floor-tag {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.fitness-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.fitness-meta-item {
+  display: flex;
+  gap: 14px;
+}
+
+.fitness-meta-item .meta-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.fitness-meta-item strong {
+  display: block;
+  font-size: 14px;
+  color: var(--primary-purple);
+  margin-bottom: 3px;
+}
+
+.fitness-meta-item p {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.4;
+}
+
+.locate-store-btn {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.fitness-sec-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--primary-purple);
+  margin-bottom: 12px;
+}
+
+.fitness-lead-desc {
+  font-size: 15px;
+  color: #444;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.fitness-sub-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary-purple);
+  margin-top: 20px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #EEE;
+  padding-bottom: 6px;
+}
+
+.fitness-zones-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.fitness-zone-box {
+  background: #F9F9F9;
+  border: 1px solid #DDD;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.fitness-zone-box strong {
+  display: block;
+  font-size: 14px;
+  color: var(--primary-purple);
+  margin-bottom: 4px;
+}
+
+.fitness-zone-box p {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.4;
+}
+
+.fitness-rules-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fitness-rules-bullets li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.45;
+}
+
+.fitness-rules-bullets li::before {
+  content: "✔";
+  position: absolute;
+  left: 0;
+  color: #2E7D32;
+  font-weight: 900;
+}
+
+/* ========================================================
+   GÓRNA ZAKŁADKA 5: REPERTUAR KINA (2 KOLUMNY: FILM | GODZINY)
+   ======================================================== */
+.cinema-repertoire-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  padding-right: 18px;
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.cinema-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--primary-purple);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.cinema-brand {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--primary-purple);
+}
+
+.cinema-date-tag {
+  font-size: 14px;
+  font-weight: 700;
+  color: #666;
+}
+
+.cinema-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cinema-table th {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: left;
+  padding: 12px 18px;
+}
+
+.cinema-table th.th-movie-title {
+  width: 45%;
+}
+
+.cinema-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #E0E0E0;
+  vertical-align: middle;
+}
+
+.cinema-table tr:nth-child(even) td {
+  background: #FAFAFA;
+}
+
+.td-movie-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.movie-title-text {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+}
+
+.movie-meta-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #777;
+}
+
+.seances-cell {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.seance-hours-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.seance-chip {
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  color: var(--primary-purple);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* Napis DUBBING wyświetlany tylko raz obok godzin seansu */
+.dubbing-badge {
+  background: #D32F2F;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.subtitles-badge {
+  background: #555555;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* ========================================================
+   GÓRNA ZAKŁADKA 6: SZUKAJ (LEWA ~3/4, PRAWA WYNIKI)
+   ======================================================== */
+.search-module-container {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  height: 100%;
+}
+
+.search-left-col {
+  width: 72%; /* Około 3/4 ekranu */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.search-right-col {
+  width: 28%;
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  height: 100%;
+}
+
+/* Pole wpisywania tekstu ponad klawiaturą */
+.search-input-box {
+  background: #FFFFFF;
+  border: 3px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.search-icon-symbol {
+  font-size: 26px;
+}
+
+.virtual-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary-purple);
+  background: transparent;
+}
+
+.clear-search-btn {
+  background: #EEEEEE;
+  border: 1px solid #CCC;
+  border-radius: 6px;
+  color: #333;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.clear-search-btn:active {
+  background: #D32F2F;
+  color: #FFFFFF;
+}
+
+/* Klawiatura ekranowa w dolnej części lewej kolumny */
+.onscreen-keyboard-wrapper {
+  flex: 1;
+  background: #FFFFFF;
+  border: 2px solid var(--primary-purple);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.key-btn {
+  height: 56px;
+  min-width: 54px;
+  padding: 0 12px;
+  background: var(--bg-button);
+  border: 2px solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+  transition: all 0.1s ease;
+}
+
+.key-btn:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  transform: translateY(2px);
+}
+
+.key-btn.key-action {
+  background: #F0EDF5;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.key-btn.key-space {
+  min-width: 320px;
+}
+
+.key-btn.key-backspace {
+  min-width: 110px;
+  color: #D32F2F;
+}
+
+/* Prawa kolumna wyników w Szukaj */
+.search-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #EEEEEE;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.results-header-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--primary-purple);
+}
+
+.results-count-badge {
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--primary-purple);
+  color: #FFFFFF;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.search-results-list {
+  flex: 1;
+  overflow-y: scroll;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #F9F9F9;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.search-result-item:hover {
+  border-color: var(--primary-purple);
+  background: rgba(46, 8, 84, 0.05);
+}
+
+.search-result-item:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+}
+
+.search-result-item:active .res-name,
+.search-result-item:active .res-cat,
+.search-result-item:active .res-floor {
+  color: #FFFFFF !important;
+}
+
+.res-logo-box {
+  width: 44px;
+  height: 40px;
+  background: #FFF;
+  border: 1px solid #CCC;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #333;
+  padding: 2px;
+  text-transform: uppercase;
+}
+
+.res-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.res-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.res-cat {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.res-floor {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary-purple);
+}

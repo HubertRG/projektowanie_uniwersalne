@@ -203,7 +203,7 @@
     </aside>
 
     <!-- ========================================================
-         OKNO MODUŁOWE POZOSTAŁYCH EKRANÓW (POD GÓRĄ, OBOK LEWEJ)
+         OKNO MODUŁOWE DLA WSZYSTKICH ZAKŁADEK (GÓRNYCH I BOCZNYCH)
          ======================================================== -->
     <div id="module-screen-window" class="module-window hidden" data-aoi="module_screen_window">
       <button id="btn-close-screen-window" class="screen-close-red-x" data-aoi="btn_close_screen_window" title="Wróć do mapy galerii">✕</button>
@@ -213,41 +213,196 @@
       </header>
 
       <div id="module-screen-body" class="module-body">
-        <!-- Widok: AKTUALNOŚCI (Siatka 2x2 z miniaturką, datą, tytułem, przyciskiem Czytaj więcej i suwakiem z prawej) -->
-        <div id="view-ekran_aktualnosci" class="tab-view-content hidden full-screen-view">
-          <div class="cards-scroll-container custom-scrollbar" id="news-cards-container" data-aoi="news_cards_scroll">
-            <!-- Kafelki generowane dynamicznie w układzie 2 kolumn -->
-          </div>
-        </div>
-
-        <!-- Widok: PROMOCJE (Wygląd identyczny do aktualności, dotyczy rabatów w określonych sklepach) -->
-        <div id="view-ekran_promocje" class="tab-view-content hidden full-screen-view">
-          <div class="cards-scroll-container custom-scrollbar" id="promo-cards-container" data-aoi="promo_cards_scroll">
-            <!-- Kafelki generowane dynamicznie w układzie 2 kolumn -->
-          </div>
-        </div>
-
-        <!-- Widok: KOMUNIKACJA (2 kolumny: lewa = linie i wybór przystanku; prawa = nagłówek i rozkład odjazdów) -->
-        <div id="view-ekran_komunikacja" class="tab-view-content hidden full-screen-view">
-          <div class="transit-container" data-aoi="transit_container">
-            <!-- Lewa kolumna: Lista linii (góra) i Przystanki w pobliżu (dół) -->
-            <div class="transit-col-left">
-              <div class="transit-box lines-box">
-                <h3 class="transit-box-title">LINIE AUTOBUSOWE</h3>
-                <div class="transit-lines-list custom-scrollbar" id="transit-lines-list" data-aoi="transit_lines_list">
-                  <!-- Dynamicznie: NR LINII  przystanek  -> kierunek -->
-                </div>
+        <!-- 1. Widok: SKLEPY (2 kolumny: lewa = kategorie, prawa = kafelki sklepów) -->
+        <div id="view-ekran_sklepy" class="tab-view-content hidden full-screen-view">
+          <div class="stores-directory-container" data-aoi="stores_directory_container">
+            <div class="stores-categories-col">
+              <h3 class="side-category-title">KATEGORIE</h3>
+              <div class="categories-list-scroll custom-scrollbar" id="stores-categories-list" data-aoi="stores_categories_list">
+                <!-- Przyciski kategorii -->
               </div>
+            </div>
+            <div class="stores-cards-col">
+              <div class="stores-cards-header">
+                <span class="category-active-label" id="stores-active-cat-label">Wszystkie sklepy (46)</span>
+                <span class="stores-count-info" id="stores-count-info">Kliknij sklep, aby zlokalizować go na planie galerii</span>
+              </div>
+              <div class="stores-cards-grid custom-scrollbar" id="stores-catalog-grid" data-aoi="stores_catalog_grid">
+                <!-- Kafelki sklepów: logo + nazwa -->
+              </div>
+            </div>
+          </div>
+        </div>
 
-              <div class="transit-box stops-box">
-                <h3 class="transit-box-title">POBLISKIE PRZYSTANKI (FILTRUJ)</h3>
-                <div class="transit-stops-list" id="transit-stops-list" data-aoi="transit_stops_list">
-                  <!-- Przyciski wyboru przystanku -->
+        <!-- 2. Widok: RESTAURACJE I KAWIARNIE (Kafelki 4 kolumny x 3 wiersze) -->
+        <div id="view-ekran_restauracje" class="tab-view-content hidden full-screen-view">
+          <div class="grid-4x3-container custom-scrollbar" id="restaurants-grid" data-aoi="restaurants_grid">
+            <!-- Dynamicznie generowane kafelki 4x3 gastro -->
+          </div>
+        </div>
+
+        <!-- 3. Widok: KLUB FITNESS (2 kolumny: lewa = logo, godziny, kontakt; prawa = opis i organizacja) -->
+        <div id="view-ekran_fitness" class="tab-view-content hidden full-screen-view">
+          <div class="fitness-layout-container" data-aoi="fitness_layout_container">
+            <div class="fitness-col-left">
+              <div class="fitness-card brand-card">
+                <div class="fitness-logo-wrapper">
+                  <div class="fitness-logo-box">CityFit</div>
+                  <span class="fitness-floor-tag">Poziom +2</span>
                 </div>
+                <div class="fitness-meta-list">
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon">⏰</span>
+                    <div>
+                      <strong>Godziny otwarcia:</strong>
+                      <p>Czynne 24 godziny na dobę, 7 dni w tygodniu (również w święta i niedziele)</p>
+                    </div>
+                  </div>
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon">📞</span>
+                    <div>
+                      <strong>Kontakt z recepcją:</strong>
+                      <p>+48 58 881 22 00</p>
+                    </div>
+                  </div>
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon">✉️</span>
+                    <div>
+                      <strong>Adres e-mail:</strong>
+                      <p>kontakt.metropolia@cityfit.pl</p>
+                    </div>
+                  </div>
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon">📍</span>
+                    <div>
+                      <strong>Lokalizacja:</strong>
+                      <p>Poziom 2, obok strefy gastronomicznej i Cinema City</p>
+                    </div>
+                  </div>
+                </div>
+                <button class="kiosk-action-btn locate-store-btn" data-store-id="s2_cityfit" data-aoi="btn_locate_cityfit">Pokaż CityFit na planie galerii</button>
               </div>
             </div>
 
-            <!-- Prawa kolumna: Szczegóły wybranej linii i rozkład odjazdów (Godziny | Minuty) -->
+            <div class="fitness-col-right custom-scrollbar">
+              <div class="fitness-card info-card">
+                <h3 class="fitness-sec-title">O KLUBIE CITYFIT</h3>
+                <p class="fitness-lead-desc">CityFit w naszej galerii to nowoczesna, w pełni zautomatyzowana przestrzeń treningowa o powierzchni ponad 2 200 m², zaprojektowana z myślą o osobach trenujących na każdym poziomie zaawansowania.</p>
+
+                <h4 class="fitness-sub-title">ORGANIZACJA PRZESTRZENI I STREFY TRENINGOWE</h4>
+                <div class="fitness-zones-grid">
+                  <div class="fitness-zone-box">
+                    <strong>1. Strefa Cardio</strong>
+                    <p>Bieżnie, orbitreki, schody ruchome i wioślarze z monitorami dotykowymi i dostępem do internetu.</p>
+                  </div>
+                  <div class="fitness-zone-box">
+                    <strong>2. Maszyny Izotoniczne</strong>
+                    <p>Sprzęt marki Matrix z intuicyjną regulacją ciężaru, gwarantujący maksymalne bezpieczeństwo ćwiczeń.</p>
+                  </div>
+                  <div class="fitness-zone-box">
+                    <strong>3. Wolne Ciężary</strong>
+                    <p>Szeroki asortyment hantli do 50 kg, 8 ławeczek regulowanych oraz podesty do martwego ciągu.</p>
+                  </div>
+                  <div class="fitness-zone-box">
+                    <strong>4. Strefa Funkcjonalna</strong>
+                    <p>Bramy crossfitowe, kettlebells, taśmy TRX, piłki slam ball oraz przestrzeń do rozgrzewki i stretchingu.</p>
+                  </div>
+                </div>
+
+                <h4 class="fitness-sub-title">JAK DZIAŁA KLUB?</h4>
+                <ul class="fitness-rules-bullets">
+                  <li><strong>Wstęp biometryczny i aplikacja:</strong> Wejście do klubu odbywa się całkowicie bezdotykowo za pomocą kodu QR w aplikacji CityFit lub skanu palca.</li>
+                  <li><strong>Karnety bez zobowiązań:</strong> Możliwość zakupu elastycznych karnetów miesięcznych z miesięcznym okresem wypowiedzenia, pakietów rocznych oraz wejściówek jednorazowych.</li>
+                  <li><strong>Darmowa woda filtrowana:</strong> Źródełka wody dostępne na terenie całego klubu bez ograniczeń dla każdego klubowicza.</li>
+                  <li><strong>Parking:</strong> Klubowicze CityFit otrzymują do 3 godzin bezpłatnego postoju na parkingu podziemnym galerii.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Widok: USŁUGI (Kafelki 4 kolumny x 3 wiersze) -->
+        <div id="view-ekran_uslugi" class="tab-view-content hidden full-screen-view">
+          <div class="grid-4x3-container custom-scrollbar" id="services-grid" data-aoi="services_grid">
+            <!-- Dynamicznie generowane kafelki 4x3 usługi -->
+          </div>
+        </div>
+
+        <!-- 5. Widok: REPERTUAR KINA (Lista w postaci 2 kolumn: nazwa filmu | godziny z napisem DUBBING) -->
+        <div id="view-ekran_kino" class="tab-view-content hidden full-screen-view">
+          <div class="cinema-repertoire-wrapper custom-scrollbar" data-aoi="cinema_repertoire_wrapper">
+            <div class="cinema-header-bar">
+              <div class="cinema-brand">Cinema City — Poziom 2</div>
+              <div class="cinema-date-tag">Repertuar na dziś: Czwartek, 5 listopada 2026</div>
+              <button class="bubble-btn locate-cinema-btn" data-store-id="s2_cinema" data-aoi="btn_locate_cinema">Lokalizuj kino na mapie</button>
+            </div>
+            <table class="cinema-table">
+              <thead>
+                <tr>
+                  <th class="th-movie-title">Tytuł filmu</th>
+                  <th class="th-movie-seances">Godziny seansów</th>
+                </tr>
+              </thead>
+              <tbody id="cinema-repertoire-body">
+                <!-- Tabela generowana dynamicznie -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. Widok: SZUKAJ (Lewa ~3/4: pole tekstowe + klawiatura ekranowa; Prawa: proponowane wyniki) -->
+        <div id="view-ekran_szukaj" class="tab-view-content hidden full-screen-view">
+          <div class="search-module-container" data-aoi="search_module_container">
+            <!-- Lewa kolumna (~3/4) -->
+            <div class="search-left-col">
+              <div class="search-input-box">
+                <span class="search-icon-symbol">🔍</span>
+                <input type="text" id="virtual-search-input" class="virtual-input" placeholder="Dotknij klawiatury poniżej, aby wyszukać sklep, markę lub usługę..." readonly data-aoi="virtual_search_input" />
+                <button id="btn-clear-search" class="clear-search-btn" data-aoi="btn_clear_search">Wyczyść</button>
+              </div>
+
+              <div class="onscreen-keyboard-wrapper" id="onscreen-keyboard" data-aoi="onscreen_keyboard">
+                <!-- Klawiatura ekranowa generowana dynamicznie -->
+              </div>
+            </div>
+
+            <!-- Prawa kolumna: Proponowane wyniki -->
+            <div class="search-right-col">
+              <div class="search-results-header">
+                <h3 class="results-header-title">WYNIKI WYSZUKIWANIA</h3>
+                <span class="results-count-badge" id="search-results-count">46 lokali</span>
+              </div>
+              <div class="search-results-list custom-scrollbar" id="search-results-list" data-aoi="search_results_list">
+                <!-- Lista proponowanych wyników -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Widok: AKTUALNOŚCI -->
+        <div id="view-ekran_aktualnosci" class="tab-view-content hidden full-screen-view">
+          <div class="cards-scroll-container custom-scrollbar" id="news-cards-container" data-aoi="news_cards_scroll"></div>
+        </div>
+
+        <!-- 8. Widok: PROMOCJE -->
+        <div id="view-ekran_promocje" class="tab-view-content hidden full-screen-view">
+          <div class="cards-scroll-container custom-scrollbar" id="promo-cards-container" data-aoi="promo_cards_scroll"></div>
+        </div>
+
+        <!-- 9. Widok: KOMUNIKACJA -->
+        <div id="view-ekran_komunikacja" class="tab-view-content hidden full-screen-view">
+          <div class="transit-container" data-aoi="transit_container">
+            <div class="transit-col-left">
+              <div class="transit-box lines-box">
+                <h3 class="transit-box-title">LINIE AUTOBUSOWE</h3>
+                <div class="transit-lines-list custom-scrollbar" id="transit-lines-list" data-aoi="transit_lines_list"></div>
+              </div>
+              <div class="transit-box stops-box">
+                <h3 class="transit-box-title">POBLISKIE PRZYSTANKI (FILTRUJ)</h3>
+                <div class="transit-stops-list" id="transit-stops-list" data-aoi="transit_stops_list"></div>
+              </div>
+            </div>
+
             <div class="transit-col-right">
               <div class="transit-selected-header" id="transit-selected-header" data-aoi="transit_selected_header">
                 <div class="transit-line-badge" id="selected-line-badge">115</div>
@@ -256,121 +411,67 @@
                   <div class="transit-sel-dest" id="selected-dest-name">Kierunek: Dworzec Główny PKP</div>
                 </div>
               </div>
-
               <div class="transit-schedule-wrapper custom-scrollbar" data-aoi="transit_schedule_table">
                 <table class="schedule-table">
                   <thead>
-                    <tr>
-                      <th class="th-hour">Godzina</th>
-                      <th class="th-minutes">Minuty odjazdu</th>
-                    </tr>
+                    <tr><th class="th-hour">Godzina</th><th class="th-minutes">Minuty odjazdu</th></tr>
                   </thead>
-                  <tbody id="transit-schedule-body">
-                    <!-- Dynamiczny rozkład 2-kolumnowy -->
-                  </tbody>
+                  <tbody id="transit-schedule-body"></tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Widok: PARKING (2 kolumny: lewa = cennik i uwagi; prawa = przewijany regulamin) -->
+        <!-- 10. Widok: PARKING -->
         <div id="view-ekran_parking" class="tab-view-content hidden full-screen-view">
           <div class="parking-container" data-aoi="parking_container">
-            <!-- Lewa kolumna: Cennik i Uwagi -->
             <div class="parking-col-left">
               <div class="parking-card pricing-card">
                 <h3 class="parking-card-title">CENNIK PARKINGU PODZIEMNEGO</h3>
                 <table class="pricing-table">
                   <tbody>
-                    <tr>
-                      <td>Pierwsza godzina (1h):</td>
-                      <td class="price-val free">BEZPŁATNIE (0 zł)</td>
-                    </tr>
-                    <tr>
-                      <td>Druga godzina (2h):</td>
-                      <td class="price-val">4,00 zł</td>
-                    </tr>
-                    <tr>
-                      <td>Trzecia godzina (3h):</td>
-                      <td class="price-val">5,00 zł</td>
-                    </tr>
-                    <tr>
-                      <td>Każda kolejna rozpoczęta godzina:</td>
-                      <td class="price-val">6,00 zł</td>
-                    </tr>
-                    <tr>
-                      <td>Klienci Cinema City (po okazaniu biletu):</td>
-                      <td class="price-val promo">Dodatkowe +2h GRATIS</td>
-                    </tr>
-                    <tr>
-                      <td>Klienci Klubu Fitness CityFit:</td>
-                      <td class="price-val promo">Do 3h BEZPŁATNIE</td>
-                    </tr>
+                    <tr><td>Pierwsza godzina (1h):</td><td class="price-val free">BEZPŁATNIE (0 zł)</td></tr>
+                    <tr><td>Druga godzina (2h):</td><td class="price-val">4,00 zł</td></tr>
+                    <tr><td>Trzecia godzina (3h):</td><td class="price-val">5,00 zł</td></tr>
+                    <tr><td>Każda kolejna rozpoczęta godzina:</td><td class="price-val">6,00 zł</td></tr>
+                    <tr><td>Klienci Cinema City (po okazaniu biletu):</td><td class="price-val promo">Dodatkowe +2h GRATIS</td></tr>
+                    <tr><td>Klienci Klubu Fitness CityFit:</td><td class="price-val promo">Do 3h BEZPŁATNIE</td></tr>
                   </tbody>
                 </table>
               </div>
-
               <div class="parking-card notices-card">
                 <h3 class="parking-card-title">WAŻNE INFORMACJE I UWAGI</h3>
                 <ul class="parking-notices-list">
-                  <li><strong>Czas na opuszczenie parkingu:</strong> Po dokonaniu opłaty w automatycznej kasie biletowej przysługuje <strong>15 minut</strong> na bezkolizyjny wyjazd z parkingu.</li>
+                  <li><strong>Czas na opuszczenie parkingu:</strong> Po dokonaniu opłaty przysługuje <strong>15 minut</strong> na bezkolizyjny wyjazd.</li>
                   <li><strong>Maksymalna opłata dobowa:</strong> Wynosi <strong>60,00 zł</strong> za każdą rozpoczętą dobę postoju.</li>
-                  <li><strong>Zgubienie biletu parkingowego:</strong> Opłata karna za zagubienie lub zniszczenie biletu wynosi <strong>50,00 zł</strong> plus koszt faktycznego czasu parkowania.</li>
-                  <li><strong>Płatności:</strong> Kasy parkingowe przy wyjściach przyjmują płatność kartami płatniczymi, BLIK-iem oraz gotówką (bilon i banknoty).</li>
+                  <li><strong>Zgubienie biletu:</strong> Opłata wynosi <strong>50,00 zł</strong> plus koszt czasu parkowania.</li>
+                  <li><strong>Płatności:</strong> Kasy przyjmują karty płatnicze, BLIK oraz gotówkę.</li>
                 </ul>
               </div>
             </div>
 
-            <!-- Prawa kolumna: Przewijany regulamin -->
             <div class="parking-col-right">
               <div class="parking-card rules-card">
                 <h3 class="parking-card-title">REGULAMIN KORZYSTANIA Z PARKINGU</h3>
                 <div class="rules-scroll-area custom-scrollbar" data-aoi="parking_rules_scroll">
                   <h4>§ 1. Postanowienia ogólne</h4>
                   <p>1. Parking jest parkingiem niestrzeżonym, płatnym, czynnym 24 godziny na dobę przez 7 dni w tygodniu.</p>
-                  <p>2. Poprzez wjazd na teren parkingu użytkownik pojazdu zawiera umowę najmu miejsca postojowego na warunkach określonych w niniejszym Regulaminie.</p>
-                  <p>3. Każdy użytkownik pojazdu zobowiązany jest do pobrania biletu parkingowego przy wjeździe lub aktywacji wjazdu aplikacją mobilną.</p>
-
+                  <p>2. Poprzez wjazd na teren parkingu użytkownik zawiera umowę najmu miejsca postojowego.</p>
                   <h4>§ 2. Zasady ruchu i bezpieczeństwa</h4>
-                  <p>1. Na terenie parkingu obowiązują przepisy Ustawy z dnia 20 czerwca 1997 r. – Prawo o ruchu drogowym oraz ograniczenie prędkości do 10 km/h.</p>
-                  <p>2. Obowiązuje bezwzględny zakaz parkowania pojazdów poza wyznaczonymi miejscami postojowymi, na drogach pożarowych oraz w strefach dla pieszych.</p>
-                  <p>3. Miejsca dla osób z niepełnosprawnościami są zastrzeżone wyłącznie dla pojazdów posiadających ważną kartę parkingową umieszczoną w widocznym miejscu za przednią szybą.</p>
-                  <p>4. Miejsca dedykowane rodzinom z dziećmi są oznaczone piktogramami i przeznaczone dla opiekunów podróżujących z dziećmi do lat 7.</p>
-
+                  <p>1. Obowiązuje ograniczenie prędkości do 10 km/h oraz przepisy Kodeksu Drogowego.</p>
+                  <p>2. Obowiązuje bezwzględny zakaz parkowania na drogach pożarowych.</p>
                   <h4>§ 3. Odpowiedzialność i nadzór</h4>
-                  <p>1. Zarządca Parkingu nie ponosi odpowiedzialności za kradzież pojazdów, ich wyposażenia ani rzeczy pozostawionych wewnątrz pojazdu.</p>
-                  <p>2. Użytkownik odpowiada za wszelkie szkody wyrządzone Zarządcy lub osobom trzecim na terenie parkingu na zasadach ogólnych Kodeksu Cywilnego.</p>
-                  <p>3. Pojazdy zagrażające bezpieczeństwu, blokujące wyjazd lub drogę pożarową mogą zostać odholowane na koszt i ryzyko właściciela.</p>
+                  <p>1. Zarządca Parkingu nie ponosi odpowiedzialności za rzeczy pozostawione wewnątrz pojazdu.</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Pozostałe widoki górne -->
-        <div id="view-ekran_sklepy" class="tab-view-content hidden">
-          <p class="placeholder-text">Katalog i spis sklepów galerii handlowej według kategorii i pięter.</p>
-        </div>
-        <div id="view-ekran_restauracje" class="tab-view-content hidden">
-          <p class="placeholder-text">Strefa gastronomiczna — kawiarnie, restauracje oraz dania szybkiej obsługi.</p>
-        </div>
-        <div id="view-ekran_fitness" class="tab-view-content hidden">
-          <p class="placeholder-text">Informacje o klubie CityFit, godziny wstępu, strefy treningowe oraz karnety.</p>
-        </div>
-        <div id="view-ekran_uslugi" class="tab-view-content hidden">
-          <p class="placeholder-text">Punkty usługowe: kantor, dorabianie kluczy, pralnia, salony optyczne i telekomunikacja.</p>
-        </div>
-        <div id="view-ekran_kino" class="tab-view-content hidden">
-          <p class="placeholder-text">Aktualny repertuar Cinema City, godziny seansów oraz zapowiedzi premier.</p>
-        </div>
-        <div id="view-ekran_szukaj" class="tab-view-content hidden">
-          <p class="placeholder-text">Wyszukiwarka sklepów, marek, promocji i usług dostępnych w centrum.</p>
-        </div>
       </div>
     </div>
 
-    <!-- OKNO MODALNE ZE SZCZEGÓŁAMI ARTYKUŁU / PROMOCJI (CZYTAJ WIĘCEJ) -->
+    <!-- MODAL ARTYKUŁU / PROMOCJI (CZYTAJ WIĘCEJ) -->
     <div id="news-promo-modal" class="modal-backdrop hidden" data-aoi="modal_news_promo_details">
       <div class="modal-window news-modal-window">
         <header class="modal-header">
@@ -387,7 +488,7 @@
             </div>
           </div>
           <div class="news-modal-content-col custom-scrollbar">
-            <p id="news-modal-text" class="news-modal-text">Pełna treść komunikatu prasowego, regulaminu promocji lub aktualności...</p>
+            <p id="news-modal-text" class="news-modal-text">Treść...</p>
           </div>
         </div>
         <footer class="modal-actions">
