@@ -16,13 +16,21 @@ let currentActiveFloor = 1;
 let selectedStoreId = null;
 let activeRouteStoreId = null;
 
+const MIN_MAP_SCALE = 0.88; // Maksymalne oddalenie
+const MAX_MAP_SCALE = 1.80; // Maksymalne przybliżenie
+const BASE_MAX_PAN_X = 350; // Bazowe ograniczenie w osi X
+const BASE_MAX_PAN_Y = 250; // Bazowe ograniczenie w osi Y
+
 let mapState = {
   panX: 0,
   panY: 0,
-  scale: 0.88,
+  scale: MIN_MAP_SCALE,
   isDragging: false,
+  isPinching: false,
   startX: 0,
-  startY: 0
+  startY: 0,
+  initialPinchDist: 0,
+  initialPinchScale: MIN_MAP_SCALE
 };
 
 // Stan wyszukiwarki
@@ -61,56 +69,144 @@ document.addEventListener("DOMContentLoaded", () => {
   initNewsPromoModalEvents();
 });
 
-function updateMapTransform() {
+function updateMapTransform(animate = true) {
   const stage = document.getElementById("map-stage");
   if (!stage) return;
+
+  // Podczas gestu wyłączamy transition, aby mapa reagowała natychmiast na ruch palca
+  stage.style.transition = animate ? "transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)" : "none";
+
+  // Nałożenie limitów na przesunięcie
+  const clamped = clampPan(mapState.panX, mapState.panY, mapState.scale);
+  mapState.panX = clamped.x;
+  mapState.panY = clamped.y;
+
   stage.style.transform = `translate(${mapState.panX}px, ${mapState.panY}px) rotateX(46deg) rotateZ(-34deg) scale(${mapState.scale})`;
 }
 
+function clampPan(x, y, scale) {
+  // Im większy zoom, tym większy margines swobodnego przesuwania
+  const currentMaxX = BASE_MAX_PAN_X * (scale / MIN_MAP_SCALE);
+  const currentMaxY = BASE_MAX_PAN_Y * (scale / MIN_MAP_SCALE);
+
+  const clampedX = Math.max(-currentMaxX, Math.min(currentMaxX, x));
+  const clampedY = Math.max(-currentMaxY, Math.min(currentMaxY, y));
+
+  return { x: clampedX, y: clampedY };
+}
+
+// Obliczanie odległości między dwoma punktami dotyku (do gestu pinch)
+function getTouchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+// ========================================================
+// OBSŁUGA GESTÓW: PRZESUWANIE + PINCH-TO-ZOOM
+// ========================================================
 function initMapPanning() {
   const viewport = document.getElementById("map-viewport");
 
-  const startDrag = (e) => {
-    // Jeśli trasa jest aktywna, blokuj przesuwanie
+  // --- MYSZ (DESKTOP) ---
+  const startDragMouse = (e) => {
     if (activeRouteStoreId) return;
-
     if (e.target.closest("button") || e.target.closest(".store-block") || e.target.closest(".map-facility-marker")) return;
+
     mapState.isDragging = true;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    mapState.startX = clientX - mapState.panX;
-    mapState.startY = clientY - mapState.panY;
+    mapState.startX = e.clientX - mapState.panX;
+    mapState.startY = e.clientY - mapState.panY;
   };
 
-  const onDrag = (e) => {
+  const onDragMouse = (e) => {
     if (!mapState.isDragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    mapState.panX = clientX - mapState.startX;
-    mapState.panY = clientY - mapState.startY;
-    updateMapTransform();
-
-    // Schowaj dymek podczas ruchu kamery
+    mapState.panX = e.clientX - mapState.startX;
+    mapState.panY = e.clientY - mapState.startY;
+    updateMapTransform(false); // Płynne śledzenie bez opóźnienia CSS
     hideActionBubble();
   };
 
-  const endDrag = (e) => {
+  const endDragMouse = (e) => {
     if (mapState.isDragging) {
       mapState.isDragging = false;
-      // Kliknięcie w tło mapy (nie w sklep) powoduje automatyczne odznaczenie
+      updateMapTransform(true); // Płynne zatrzymanie z clampem
       if (e.target.id === "building-base" || e.target.id === "corridor-layer" || e.target.id === "map-viewport") {
         deselectStore(true);
       }
     }
   };
 
-  viewport.addEventListener("mousedown", startDrag);
-  window.addEventListener("mousemove", onDrag);
-  window.addEventListener("mouseup", endDrag);
+  viewport.addEventListener("mousedown", startDragMouse);
+  window.addEventListener("mousemove", onDragMouse);
+  window.addEventListener("mouseup", endDragMouse);
 
-  viewport.addEventListener("touchstart", startDrag, { passive: true });
-  window.addEventListener("touchmove", onDrag, { passive: true });
-  window.addEventListener("touchend", endDrag);
+  // Dodatkowo: zoom kółkiem myszy (ułatwia testowanie bez ekranu dotykowego)
+  viewport.addEventListener("wheel", (e) => {
+    if (activeRouteStoreId) return;
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 0.08 : -0.08;
+    mapState.scale = Math.max(MIN_MAP_SCALE, Math.min(MAX_MAP_SCALE, mapState.scale + zoomFactor));
+    updateMapTransform(true);
+    hideActionBubble();
+  }, { passive: false });
+
+  // --- EKRAN DOTYKOWY (1 PALEC: PRZESUWANIE, 2 PALCE: PINCH-TO-ZOOM) ---
+  viewport.addEventListener("touchstart", (e) => {
+    if (activeRouteStoreId) return;
+
+    if (e.touches.length === 2) {
+      // Rozpoczęcie gestu Pinch
+      mapState.isPinching = true;
+      mapState.isDragging = false;
+      mapState.initialPinchDist = getTouchDistance(e.touches);
+      mapState.initialPinchScale = mapState.scale;
+      hideActionBubble();
+    } else if (e.touches.length === 1) {
+      if (e.target.closest("button") || e.target.closest(".store-block") || e.target.closest(".map-facility-marker")) return;
+      mapState.isDragging = true;
+      mapState.isPinching = false;
+      mapState.startX = e.touches[0].clientX - mapState.panX;
+      mapState.startY = e.touches[0].clientY - mapState.panY;
+    }
+  }, { passive: false });
+
+  window.addEventListener("touchmove", (e) => {
+    if (activeRouteStoreId) return;
+
+    if (mapState.isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const currentDist = getTouchDistance(e.touches);
+      if (mapState.initialPinchDist > 0) {
+        const factor = currentDist / mapState.initialPinchDist;
+        const newScale = mapState.initialPinchScale * factor;
+        // Ograniczenie skali
+        mapState.scale = Math.max(MIN_MAP_SCALE, Math.min(MAX_MAP_SCALE, newScale));
+        updateMapTransform(false);
+      }
+    } else if (mapState.isDragging && e.touches.length === 1) {
+      mapState.panX = e.touches[0].clientX - mapState.startX;
+      mapState.panY = e.touches[0].clientY - mapState.startY;
+      updateMapTransform(false);
+      hideActionBubble();
+    }
+  }, { passive: false });
+
+  const endTouch = (e) => {
+    if (mapState.isPinching && e.touches.length < 2) {
+      mapState.isPinching = false;
+      updateMapTransform(true);
+    }
+    if (mapState.isDragging && e.touches.length === 0) {
+      mapState.isDragging = false;
+      updateMapTransform(true);
+      if (e.target.id === "building-base" || e.target.id === "corridor-layer" || e.target.id === "map-viewport") {
+        deselectStore(true);
+      }
+    }
+  };
+
+  window.addEventListener("touchend", endTouch);
+  window.addEventListener("touchcancel", endTouch);
 }
 
 function initClock() {

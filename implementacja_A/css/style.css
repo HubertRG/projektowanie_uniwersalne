@@ -62,6 +62,7 @@ html, body {
   overflow: hidden;
   cursor: grab;
   z-index: 10;
+  touch-action: none;
 }
 
 #map-viewport:active {
