@@ -18,6 +18,12 @@
   --building-bg: #27282b;
   --store-bg: #EAEAEA;
   --store-selected: #D32F2F;
+    /* === Scrollbar: szeroki, prostokątny, ciemne tło === */
+  --scrollbar-width: 60px;
+  --scrollbar-track: #1A1A1D;              /* ciemne tło toru (bliżej --building-bg) */
+  --scrollbar-track-border: #2E0854;       /* akcent lewej krawędzi */
+  --scrollbar-thumb: #5A2A9E;              /* jaśniejszy fiolet na ciemnym tle – widoczny */
+  --scrollbar-thumb-active: #7B3FD1;       /* akcent przy przeciąganiu */
 }
 
 * {
@@ -29,10 +35,13 @@
 }
 
 html, body {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
-  background-color: var(--bg-app);
+  background-color: #D8DCE2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   color: var(--primary-purple);
 }
@@ -40,11 +49,58 @@ html, body {
 #kiosk-app {
   width: 1920px;
   height: 1080px;
-  max-width: 100vw;
-  max-height: 100vh;
+  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
   position: relative;
   background-color: var(--bg-app);
   overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.25);
+  transform-origin: center center;
+}
+
+/* === KONTENER ZE SCROLLBAREM === */
+.scroll-container {
+  overflow-y: scroll;                      /* zawsze widoczny */
+  overflow-x: hidden;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* === WEBKIT: Edge / Chrome / Safari / Opera === */
+.scroll-container::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+.scroll-container::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-left: var(--border-width) solid var(--scrollbar-track-border);
+  border-radius: 0;                        /* prostokątny */
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;                      /* ledwo zaokrąglony – prostokątny */
+  border: 6px solid var(--scrollbar-track);/* odstęp od toru, ale wciąż prostokąt */
+  background-clip: padding-box;
+  min-height: 100px;                       /* wygodny do chwytania palcem */
+  /* BRAK :hover */
+}
+
+.scroll-container::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+  background-clip: padding-box;
+}
+
+.scroll-container::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+.scroll-container::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+  width: 0;
 }
 
 /* ========================================================

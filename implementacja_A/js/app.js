@@ -37,10 +37,13 @@ let mapState = {
 let currentSearchQuery = "";
 let currentStoreCategoryFilter = "ALL";
 
-let selectedStopId = "stop_galeria_01";
-let selectedLineNum = "115";
+let selectedStopId = "stop_ogrod_saski_01";
+let selectedLineNum = "20";
 
 document.addEventListener("DOMContentLoaded", () => {
+  updateKioskAspectRatio();
+  window.addEventListener("resize", updateKioskAspectRatio);
+
   loggerInstance = new EyeTrackerLogger();
   loggerInstance.setFloor(1);
 
@@ -68,6 +71,30 @@ document.addEventListener("DOMContentLoaded", () => {
   initTransitModule();
   initNewsPromoModalEvents();
 });
+
+function updateKioskAspectRatio() {
+  const kiosk = document.getElementById("kiosk-app");
+  if (!kiosk) return;
+
+  const targetW = 1920;
+  const targetH = 1080;
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+
+  // Jeśli ekran ma dokładnie 1920x1080 (Full HD), scale = 1 (rzeczywisty rozmiar 1:1)
+  if (winW === targetW && winH === targetH) {
+    kiosk.style.transform = "scale(1)";
+    return;
+  }
+
+  // Dla ekranów o innych proporcjach lub rozdzielczościach zachowaj idealne 16:9
+  // (nie rozciągając obrazu, resztę wypełnia tło body)
+  const scaleX = winW / targetW;
+  const scaleY = winH / targetH;
+  const scale = Math.min(scaleX, scaleY);
+
+  kiosk.style.transform = `scale(${scale})`;
+}
 
 function updateMapTransform(animate = true) {
   const stage = document.getElementById("map-stage");
