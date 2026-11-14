@@ -365,22 +365,25 @@ function showActionBubble(store, storeElement) {
 
   if (!bubble || !storeElement) return;
 
+  // Resetuj stan rozwinięcia przy otwarciu dla nowego sklepu
+  collapseBubbleDetails();
+
   title.innerText = store.name;
   subtitle.innerText = `Poziom ${store.floor} • ${store.category}`;
+  // Pseudologo z nazwy sklepu (bez plików graficznych)
   logoBox.innerText = store.name.substring(0, 10);
   bubble.setAttribute("data-aoi", `store_actions_bubble_${store.id}`);
 
-  // Pobierz rzeczywiste współrzędne 2D na ekranie monitora kiosku
   const rect = storeElement.getBoundingClientRect();
   const kioskRect = document.getElementById("kiosk-app").getBoundingClientRect();
 
-  // Środek sklepu w układzie kontenera aplikacji
-  const storeScreenX = rect.left + rect.width / 2 - kioskRect.left;
-  let storeScreenY = rect.top - kioskRect.top - 12; // 12px ponad górną krawędzią sklepu
+  // Przeliczenie na współrzędne 1920x1080 niezależnie od skali okna
+  const scale = kioskRect.width / 1920;
+  const storeScreenX = (rect.left + rect.width / 2 - kioskRect.left) / scale;
+  let storeScreenY = (rect.top - kioskRect.top) / scale - 12;
 
-  // Zabezpieczenie przed wyjechaniem poza górną krawędź ekranu (pod nagłówek)
-  if (storeScreenY < 130) {
-    storeScreenY = rect.bottom - kioskRect.top + 130; // Wyświetl poniżej sklepu
+  if (storeScreenY < 140) {
+    storeScreenY = (rect.bottom - kioskRect.top) / scale + 150;
   }
 
   bubble.style.left = `${storeScreenX}px`;
@@ -388,8 +391,38 @@ function showActionBubble(store, storeElement) {
   bubble.classList.remove("hidden");
 }
 
+function expandBubbleDetails(storeId) {
+  const store = STORES_CATALOG.find(s => s.id === storeId);
+  if (!store) return;
+
+  const bubble = document.getElementById("store-action-bubble");
+  const panel = document.getElementById("bubble-expanded-details");
+  const closeBtn = document.getElementById("btn-collapse-bubble-info");
+  const infoBtn = document.getElementById("btn-show-modal");
+
+  bubble.classList.add("expanded");
+  panel.classList.remove("hidden");
+  closeBtn.classList.remove("hidden");
+  infoBtn.innerText = "Zwiń opis";
+
+  loggerInstance.logEvent("EXPAND_STORE_DETAILS_BUBBLE", null, { storeId: store.id, storeName: store.name });
+}
+
+function collapseBubbleDetails() {
+  const bubble = document.getElementById("store-action-bubble");
+  const panel = document.getElementById("bubble-expanded-details");
+  const closeBtn = document.getElementById("btn-collapse-bubble-info");
+  const infoBtn = document.getElementById("btn-show-modal");
+
+  if (bubble) bubble.classList.remove("expanded");
+  if (panel) panel.classList.add("hidden");
+  if (closeBtn) closeBtn.classList.add("hidden");
+  if (infoBtn) infoBtn.innerText = "O sklepie";
+}
+
 function hideActionBubble() {
   const bubble = document.getElementById("store-action-bubble");
+  collapseBubbleDetails();
   if (bubble) {
     bubble.classList.add("hidden");
     bubble.setAttribute("data-aoi", "store_actions_bubble");
@@ -406,6 +439,33 @@ function hideRouteBanner() {
   document.getElementById("route-floor-banner").classList.add("hidden");
 }
 
+function initActionBubbleAndModal() {
+  const btnShowRoute = document.getElementById("btn-show-route");
+  const btnToggleInfo = document.getElementById("btn-show-modal");
+  const btnCollapse = document.getElementById("btn-collapse-bubble-info");
+
+  btnShowRoute.addEventListener("click", () => {
+    if (selectedStoreId) executeRouteNavigation(selectedStoreId);
+  });
+
+  btnToggleInfo.addEventListener("click", () => {
+    if (!selectedStoreId) return;
+    const panel = document.getElementById("bubble-expanded-details");
+    if (panel.classList.contains("hidden")) {
+      expandBubbleDetails(selectedStoreId);
+    } else {
+      collapseBubbleDetails();
+    }
+  });
+
+  if (btnCollapse) {
+    btnCollapse.addEventListener("click", (e) => {
+      e.stopPropagation();
+      collapseBubbleDetails();
+    });
+  }
+}
+
 function initRouteDismissButton() {
   const btnOk = document.getElementById("btn-route-ok");
   btnOk.addEventListener("click", () => {
@@ -413,7 +473,14 @@ function initRouteDismissButton() {
     dismissActiveRoute();
 
     if (storeToReopen) {
-      openStoreModal(storeToReopen);
+      const store = STORES_CATALOG.find(s => s.id === storeToReopen);
+      const storeEl = document.getElementById(`store-${storeToReopen}`);
+      if (store && storeEl) {
+        selectedStoreId = store.id;
+        storeEl.classList.add("selected");
+        showActionBubble(store, storeEl);
+        expandBubbleDetails(store.id);
+      }
     }
   });
 }
@@ -1149,42 +1216,42 @@ function openNewsPromoModal(data) {
   loggerInstance.logEvent("MODAL_OPEN_NEWS_PROMO", null, { title: data.title });
 }
 
-function initActionBubbleAndModal() {
-  const btnShowRoute = document.getElementById("btn-show-route");
-  const btnShowModal = document.getElementById("btn-show-modal");
-  const modal = document.getElementById("store-modal");
-  const btnCloseModal = document.getElementById("btn-close-modal");
-  const btnCloseBottom = document.getElementById("modal-btn-close-bottom");
-  const btnModalRoute = document.getElementById("modal-btn-route");
+// function initActionBubbleAndModal() {
+//   const btnShowRoute = document.getElementById("btn-show-route");
+//   const btnShowModal = document.getElementById("btn-show-modal");
+//   const modal = document.getElementById("store-modal");
+//   const btnCloseModal = document.getElementById("btn-close-modal");
+//   const btnCloseBottom = document.getElementById("modal-btn-close-bottom");
+//   const btnModalRoute = document.getElementById("modal-btn-route");
 
-  btnShowRoute.addEventListener("click", () => {
-    if (selectedStoreId) executeRouteNavigation(selectedStoreId);
-  });
+//   btnShowRoute.addEventListener("click", () => {
+//     if (selectedStoreId) executeRouteNavigation(selectedStoreId);
+//   });
 
-  btnShowModal.addEventListener("click", () => {
-    if (selectedStoreId) openStoreModal(selectedStoreId);
-  });
+//   btnShowModal.addEventListener("click", () => {
+//     if (selectedStoreId) openStoreModal(selectedStoreId);
+//   });
 
-  btnCloseModal.addEventListener("click", () => modal.classList.add("hidden"));
-  btnCloseBottom.addEventListener("click", () => modal.classList.add("hidden"));
+//   btnCloseModal.addEventListener("click", () => modal.classList.add("hidden"));
+//   btnCloseBottom.addEventListener("click", () => modal.classList.add("hidden"));
 
-  btnModalRoute.addEventListener("click", () => {
-    modal.classList.add("hidden");
-    if (selectedStoreId) executeRouteNavigation(selectedStoreId);
-  });
-}
+//   btnModalRoute.addEventListener("click", () => {
+//     modal.classList.add("hidden");
+//     if (selectedStoreId) executeRouteNavigation(selectedStoreId);
+//   });
+// }
 
-function openStoreModal(storeId) {
-  const store = STORES_CATALOG.find(s => s.id === storeId);
-  if (!store) return;
+// function openStoreModal(storeId) {
+//   const store = STORES_CATALOG.find(s => s.id === storeId);
+//   if (!store) return;
 
-  document.getElementById("modal-store-name").innerText = store.name;
-  document.getElementById("modal-store-cat").innerText = store.category;
-  document.getElementById("modal-store-floor").innerText = `Poziom ${store.floor}`;
-  document.getElementById("modal-store-logo").innerText = store.logo;
+//   document.getElementById("modal-store-name").innerText = store.name;
+//   document.getElementById("modal-store-cat").innerText = store.category;
+//   document.getElementById("modal-store-floor").innerText = `Poziom ${store.floor}`;
+//   document.getElementById("modal-store-logo").innerText = store.logo;
 
-  document.getElementById("store-modal").classList.remove("hidden");
-}
+//   document.getElementById("store-modal").classList.remove("hidden");
+// }
 
 function initResearcherDock() {
   const btnToggle = document.getElementById("btn-toggle-researcher");

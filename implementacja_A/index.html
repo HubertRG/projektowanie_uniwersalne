@@ -57,6 +57,18 @@
           <span id="bubble-store-cat-floor" class="bubble-subtitle-2d">Poziom 1 • Moda</span>
         </div>
       </div>
+      <!-- ROZSZERZANA SEKCJA ZE SZCZEGÓŁAMI SKLEPU (DOMYŚLNIE UKRYTA) -->
+      <div id="bubble-expanded-details" class="bubble-details-panel hidden" data-aoi="bubble_expanded_details">
+        <div class="bubble-detail-row">
+          <strong>Godziny otwarcia:</strong> <span>09:00 – 21:00</span>
+        </div>
+        <div class="bubble-detail-row">
+          <strong>Telefon:</strong> <span>+48 58 777 00 00</span>
+        </div>
+        <p id="bubble-store-desc" class="bubble-detail-desc">
+          Salon oferuje szeroki asortyment produktów wiodących marek. Lokal przystosowany dla osób z niepełnosprawnościami.
+        </p>
+      </div>
       <!-- Dół dymka: przyciski Pokaż drogę i O sklepie -->
       <div class="bubble-buttons-2d">
         <button id="btn-show-route" class="bubble-btn-2d primary" data-aoi="btn_bubble_route">Pokaż drogę</button>
@@ -506,32 +518,6 @@
         </div>
         <footer class="modal-actions">
           <button id="btn-close-news-modal-bottom" class="kiosk-action-btn" data-aoi="btn_modal_news_close">Zamknij</button>
-        </footer>
-      </div>
-    </div>
-
-    <!-- OKNO MODALNE ZE SZCZEGÓŁAMI SKLEPU -->
-    <div id="store-modal" class="modal-backdrop hidden" data-aoi="modal_store_details">
-      <div class="modal-window">
-        <header class="modal-header">
-          <h2 id="modal-store-name">Nazwa Sklepu</h2>
-          <button id="btn-close-modal" class="modal-close" data-aoi="btn_close_modal">✕</button>
-        </header>
-        <div class="modal-body">
-          <div class="modal-logo-wrapper">
-            <div id="modal-store-logo" class="modal-logo-box">LOGO</div>
-          </div>
-          <div class="modal-info-list">
-            <p><strong>Kategoria:</strong> <span id="modal-store-cat">Moda</span></p>
-            <p><strong>Lokalizacja:</strong> <span id="modal-store-floor">Poziom 1</span></p>
-            <p><strong>Godziny otwarcia:</strong> 09:00 – 21:00</p>
-            <p><strong>Telefon:</strong> +48 58 777 00 00</p>
-            <p class="modal-desc">Sklep oferuje szeroki asortyment produktów wiodących marek. Lokal w pełni przystosowany dla osób niepełnosprawnych.</p>
-          </div>
-        </div>
-        <footer class="modal-actions">
-          <button id="modal-btn-route" class="kiosk-action-btn" data-aoi="btn_modal_show_route">Nawiguj do sklepu</button>
-          <button id="modal-btn-close-bottom" class="kiosk-action-btn secondary" data-aoi="btn_modal_close">Zamknij</button>
         </footer>
       </div>
     </div>
