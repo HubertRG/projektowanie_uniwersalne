@@ -329,7 +329,6 @@ function handleStoreClick(store) {
   if (selectedStoreId === store.id) {
     deselectStore(true);
   } else {
-    // Odznacz poprzedni sklep
     if (selectedStoreId) {
       const prevBlock = document.getElementById(`store-${selectedStoreId}`);
       if (prevBlock) prevBlock.classList.remove("selected");
@@ -338,12 +337,42 @@ function handleStoreClick(store) {
     clickedBlock.classList.add("selected");
     selectedStoreId = store.id;
 
-    // Pokaż dymek w pionie 2D nad sklepem
-    showActionBubble(store, clickedBlock);
-
     mapState.scale = 1.04;
-    updateMapTransform();
+    if (store.row <= 3) {
+      mapState.panY = Math.max(mapState.panY, 150);
+    }
+    updateMapTransform(true);
+
+    showActionBubble(store, clickedBlock);
+    setTimeout(() => {
+      if (selectedStoreId === store.id) {
+        positionBubbleOverStore(clickedBlock);
+      }
+    }, 360);
   }
+}
+
+function positionBubbleOverStore(storeElement) {
+  const bubble = document.getElementById("store-action-bubble");
+  if (!bubble || !storeElement || bubble.classList.contains("hidden")) return;
+
+  const rect = storeElement.getBoundingClientRect();
+  const kioskRect = document.getElementById("kiosk-app").getBoundingClientRect();
+  const scale = kioskRect.width / 1920;
+
+  const storeScreenX = (rect.left + rect.width / 2 - kioskRect.left) / scale;
+  let storeScreenY = (rect.top - kioskRect.top) / scale - 14;
+
+  const bubbleHeight = bubble.offsetHeight || 135;
+  const minTopLimit = 165 + bubbleHeight;
+  if (storeScreenY < minTopLimit) {
+    storeScreenY = minTopLimit;
+  }
+
+  const clampedX = Math.max(460, Math.min(1620, storeScreenX));
+
+  bubble.style.left = `${clampedX}px`;
+  bubble.style.top = `${storeScreenY}px`;
 }
 
 function offsetRelativeTo(el, ancestor) {
@@ -365,30 +394,15 @@ function showActionBubble(store, storeElement) {
 
   if (!bubble || !storeElement) return;
 
-  // Resetuj stan rozwinięcia przy otwarciu dla nowego sklepu
   collapseBubbleDetails();
 
   title.innerText = store.name;
   subtitle.innerText = `Poziom ${store.floor} • ${store.category}`;
-  // Pseudologo z nazwy sklepu (bez plików graficznych)
   logoBox.innerText = store.name.substring(0, 10);
   bubble.setAttribute("data-aoi", `store_actions_bubble_${store.id}`);
 
-  const rect = storeElement.getBoundingClientRect();
-  const kioskRect = document.getElementById("kiosk-app").getBoundingClientRect();
-
-  // Przeliczenie na współrzędne 1920x1080 niezależnie od skali okna
-  const scale = kioskRect.width / 1920;
-  const storeScreenX = (rect.left + rect.width / 2 - kioskRect.left) / scale;
-  let storeScreenY = (rect.top - kioskRect.top) / scale - 12;
-
-  if (storeScreenY < 140) {
-    storeScreenY = (rect.bottom - kioskRect.top) / scale + 150;
-  }
-
-  bubble.style.left = `${storeScreenX}px`;
-  bubble.style.top = `${storeScreenY}px`;
   bubble.classList.remove("hidden");
+  positionBubbleOverStore(storeElement);
 }
 
 function expandBubbleDetails(storeId) {
@@ -411,12 +425,10 @@ function expandBubbleDetails(storeId) {
 function collapseBubbleDetails() {
   const bubble = document.getElementById("store-action-bubble");
   const panel = document.getElementById("bubble-expanded-details");
-  const closeBtn = document.getElementById("btn-collapse-bubble-info");
   const infoBtn = document.getElementById("btn-show-modal");
 
   if (bubble) bubble.classList.remove("expanded");
   if (panel) panel.classList.add("hidden");
-  if (closeBtn) closeBtn.classList.add("hidden");
   if (infoBtn) infoBtn.innerText = "O sklepie";
 }
 
@@ -442,7 +454,7 @@ function hideRouteBanner() {
 function initActionBubbleAndModal() {
   const btnShowRoute = document.getElementById("btn-show-route");
   const btnToggleInfo = document.getElementById("btn-show-modal");
-  const btnCollapse = document.getElementById("btn-collapse-bubble-info");
+  const btnCloseBubble = document.getElementById("btn-close-bubble");
 
   btnShowRoute.addEventListener("click", () => {
     if (selectedStoreId) executeRouteNavigation(selectedStoreId);
@@ -451,17 +463,23 @@ function initActionBubbleAndModal() {
   btnToggleInfo.addEventListener("click", () => {
     if (!selectedStoreId) return;
     const panel = document.getElementById("bubble-expanded-details");
+    const storeEl = document.getElementById(`store-${selectedStoreId}`);
+
     if (panel.classList.contains("hidden")) {
       expandBubbleDetails(selectedStoreId);
     } else {
       collapseBubbleDetails();
     }
+
+    if (storeEl) {
+      positionBubbleOverStore(storeEl);
+    }
   });
 
-  if (btnCollapse) {
-    btnCollapse.addEventListener("click", (e) => {
+  if (btnCloseBubble) {
+    btnCloseBubble.addEventListener("click", (e) => {
       e.stopPropagation();
-      collapseBubbleDetails();
+      deselectStore(true);
     });
   }
 }

@@ -1444,6 +1444,31 @@ html, body {
   display: none !important;
 }
 
+.bubble-close-x {
+  margin-left: auto;
+  align-self: flex-start;
+  width: 30px;
+  height: 30px;
+  background: #F4F1F8;
+  border: 2px solid var(--primary-purple);
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--primary-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+}
+
+.bubble-close-x:active {
+  background: var(--primary-purple);
+  color: #FFFFFF;
+}
+
 .bubble-details-panel {
   display: flex;
   flex-direction: column;
