@@ -1033,6 +1033,8 @@ function clearNavigationRoute() {
 }
 
 function switchFloorTab(floor) {
+  const routeLine = document.getElementById("route-line");
+  if (routeLine) routeLine.setAttribute("d", "");
   // Automatycznie odznacz sklep przy zmianie piętra
   deselectStore(false);
 
