@@ -21,6 +21,20 @@ const MAX_MAP_SCALE = 1.80; // Maksymalne przybliżenie
 const BASE_MAX_PAN_X = 350; // Bazowe ograniczenie w osi X
 const BASE_MAX_PAN_Y = 250; // Bazowe ograniczenie w osi Y
 
+const NAV_WAYPOINTS = {
+  0: [
+    { id: "center", x: 421, y: 300 },   // środek głównego korytarza
+    { id: "left",   x: 150, y: 300 },   // lewy koniec korytarza
+    { id: "right",  x: 700, y: 300 },   // prawy koniec korytarza
+    { id: "top_l",  x: 300, y: 200 },   // górny korytarz (lewa)
+    { id: "top_r",  x: 550, y: 200 },   // górny korytarz (prawa)
+    { id: "bot_l",  x: 300, y: 400 },   // dolny korytarz (lewa)
+    { id: "bot_r",  x: 550, y: 400 }    // dolny korytarz (prawa)
+  ],
+  1: [ /* analogicznie – do uzupełnienia */ ],
+  2: [ /* analogicznie – do uzupełnienia */ ]
+};
+
 let mapState = {
   panX: 0,
   panY: 0,
@@ -251,43 +265,131 @@ function initClock() {
 }
 
 function renderStoresForFloor(floor) {
-  const gridContainer = document.getElementById("stores-puzzle-grid");
+  const svgLayer = document.getElementById("stores-svg-layer");
   const amenitiesContainer = document.getElementById("map-amenities-layer");
-  gridContainer.innerHTML = "";
+  const grid = document.getElementById("stores-puzzle-grid");
+  if (!svgLayer || !amenitiesContainer) return;
+
+  // Czyść WSZYSTKO – SVG, grid i amenities
+  svgLayer.innerHTML = "";
   amenitiesContainer.innerHTML = "";
+  if (grid) { grid.innerHTML = ""; grid.style.display = "none"; }
 
   const pin = document.getElementById("you-are-here-pin");
-  if (pin) {
-    pin.style.display = (floor === 1) ? "flex" : "none";
+  if (pin) pin.style.display = (floor === 1) ? "flex" : "none";
+
+  let plan = null;
+  if (floor === 0 && typeof FLOOR_PLAN_0 !== "undefined") plan = FLOOR_PLAN_0;
+  else if (floor === 1 && typeof FLOOR_PLAN_1 !== "undefined") plan = FLOOR_PLAN_1;
+  else if (floor === 2 && typeof FLOOR_PLAN_2 !== "undefined") plan = FLOOR_PLAN_2;
+  
+  if (plan) {
+    const svg = document.getElementById("stores-svg");
+    svg.setAttribute("viewBox", plan.viewBox);
+    
+    // Najpierw renderuj puste (szare) lokale
+    Object.entries(plan.emptyShops).forEach(([id, shape]) => {
+      const el = createSvgShape(shape);
+      el.setAttribute("class", "empty-shop");
+      el.setAttribute("pointer-events", "none");
+      svgLayer.appendChild(el);
+    });
+
+    // Potem Twoje sklepy (klikalne)
+    Object.entries(plan.shops).forEach(([id, shop]) => {
+      const el = createSvgShape(shop);
+      el.setAttribute("class", "shop-polygon");
+      el.setAttribute("id", `store-${shop.storeId}`);
+      el.setAttribute("data-store-id", shop.storeId);
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const store = STORES_CATALOG.find(s => s.id === shop.storeId);
+        if (store) handleStoreClick(store);
+      });
+      svgLayer.appendChild(el);
+
+      const bbox = el.getBBox();
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", bbox.x + bbox.width / 2);
+      label.setAttribute("y", bbox.y + bbox.height / 2);
+      label.setAttribute("class", "shop-label");
+      label.setAttribute("data-label-for", shop.storeId);
+      label.textContent = shop.label;
+      svgLayer.appendChild(label);
+      
+    });
+
+    if (plan.iconsSvg) {
+   const iconsWrapper = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  iconsWrapper.setAttribute("id", "floor-icons");
+  iconsWrapper.innerHTML = plan.iconsSvg;
+  svgLayer.appendChild(iconsWrapper);
+
+  // Dla KAŻDEJ grupy rysujemy dymek
+  iconsWrapper.querySelectorAll("g").forEach(group => {
+    const bbox = group.getBBox();
+    const padding = 8;
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", bbox.x - padding);
+    rect.setAttribute("y", bbox.y - padding);
+    rect.setAttribute("width", bbox.width + padding * 2);
+    rect.setAttribute("height", bbox.height + padding * 2);
+    rect.setAttribute("rx", 6);
+    rect.setAttribute("ry", 6);
+    rect.setAttribute("class", "facility-bubble");
+    group.insertBefore(rect, group.firstChild); // W ŚRODKU grupy, jako pierwsze dziecko
+  });
+}
+  } else {
+    renderStoresGridFallback(floor, amenitiesContainer);
   }
+
+  // 3. Udogodnienia (div-y nałożone)
+  // const amenities = AMENITIES_CATALOG.filter(a => a.floor === floor);
+  // amenities.forEach(am => {
+  //   const marker = document.createElement("div");
+  //   marker.className = "map-facility-marker";
+  //   marker.style.left = `${am.x}%`;
+  //   marker.style.top = `${am.y}%`;
+  //   marker.setAttribute("data-aoi", `aoi_fac_${am.type}_floor${floor}`);
+  //   marker.innerHTML = `<svg viewBox="0 0 24 24">${am.icon}</svg><span class="marker-label">${am.label}</span>`;
+  //   amenitiesContainer.appendChild(marker);
+  // });
+  amenitiesContainer.innerHTML = "";
+}
+
+function createSvgShape(shape) {
+  const NS = "http://www.w3.org/2000/svg";
+  let el;
+  if (shape.type === "path") {
+    el = document.createElementNS(NS, "path");
+    el.setAttribute("d", shape.d);
+  } else if (shape.type === "polygon") {
+    el = document.createElementNS(NS, "polygon");
+    el.setAttribute("points", shape.points);
+  } else if (shape.type === "polyline") {
+    el = document.createElementNS(NS, "polyline");
+    el.setAttribute("points", shape.points);
+  }
+  return el;
+}
+
+function renderStoresGridFallback(floor, amenitiesContainer) {
+  const grid = document.getElementById("stores-puzzle-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  grid.style.display = "grid";
 
   const stores = STORES_CATALOG.filter(s => s.floor === floor);
   stores.forEach(store => {
     const block = document.createElement("div");
     block.className = `store-block ${store.isLarge ? "large-store" : "small-store"}`;
     block.id = `store-${store.id}`;
-    block.setAttribute("data-aoi", `aoi_store_${store.id}`);
-
     block.style.gridColumn = `${store.col} / span ${store.w}`;
     block.style.gridRow = `${store.row} / span ${store.h}`;
-
-    const brandBox = document.createElement("div");
-    brandBox.className = "store-brand-box";
-    brandBox.innerText = store.name.substring(0, 12);
-
-    const caption = document.createElement("div");
-    caption.className = "store-caption";
-    caption.innerText = store.name;
-
-    block.appendChild(brandBox);
-    block.appendChild(caption);
-
-    block.addEventListener("click", (e) => {
-      e.stopPropagation();
-      handleStoreClick(store);
-    });
-
-    gridContainer.appendChild(block);
+    block.innerHTML = `<div class="store-brand-box">${store.name.substring(0,12)}</div><div class="store-caption">${store.name}</div>`;
+    block.addEventListener("click", (e) => { e.stopPropagation(); handleStoreClick(store); });
+    grid.appendChild(block);
   });
 
   const amenities = AMENITIES_CATALOG.filter(a => a.floor === floor);
@@ -296,13 +398,59 @@ function renderStoresForFloor(floor) {
     marker.className = "map-facility-marker";
     marker.style.left = `${am.x}%`;
     marker.style.top = `${am.y}%`;
-    marker.setAttribute("data-aoi", `aoi_fac_${am.type}_floor${floor}`);
+    marker.innerHTML = `<svg viewBox="0 0 24 24">${am.icon}</svg><span class="marker-label">${am.label}</span>`;
+    amenitiesContainer.appendChild(marker);
+  });
+}
 
-    marker.innerHTML = `
-      <svg viewBox="0 0 24 24">${am.icon}</svg>
-      <span class="marker-label">${am.label}</span>
-    `;
+function createSvgShape(shape) {
+  const NS = "http://www.w3.org/2000/svg";
+  let el;
+  if (shape.type === "path") {
+    el = document.createElementNS(NS, "path");
+    el.setAttribute("d", shape.d);
+  } else if (shape.type === "polygon") {
+    el = document.createElementNS(NS, "polygon");
+    el.setAttribute("points", shape.points);
+  } else if (shape.type === "polyline") {
+    el = document.createElementNS(NS, "polyline");
+    el.setAttribute("points", shape.points);
+  } else if (shape.type === "rect") {
+    el = document.createElementNS(NS, "rect");
+    el.setAttribute("x", shape.x);
+    el.setAttribute("y", shape.y);
+    el.setAttribute("width", shape.width);
+    el.setAttribute("height", shape.height);
+  }
+  return el;
+}
 
+// Fallback dla pięter 1 i 2 (stara siatka) – do czasu, aż dodasz ich plany
+function renderStoresGridFallback(floor, amenitiesContainer) {
+  const grid = document.getElementById("stores-puzzle-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  grid.style.display = "grid";
+
+  const stores = STORES_CATALOG.filter(s => s.floor === floor);
+  stores.forEach(store => {
+    const block = document.createElement("div");
+    block.className = `store-block ${store.isLarge ? "large-store" : "small-store"}`;
+    block.id = `store-${store.id}`;
+    block.style.gridColumn = `${store.col} / span ${store.w}`;
+    block.style.gridRow = `${store.row} / span ${store.h}`;
+    block.innerHTML = `<div class="store-brand-box">${store.name.substring(0,12)}</div><div class="store-caption">${store.name}</div>`;
+    block.addEventListener("click", (e) => { e.stopPropagation(); handleStoreClick(store); });
+    grid.appendChild(block);
+  });
+
+  const amenities = AMENITIES_CATALOG.filter(a => a.floor === floor);
+  amenities.forEach(am => {
+    const marker = document.createElement("div");
+    marker.className = "map-facility-marker";
+    marker.style.left = `${am.x}%`;
+    marker.style.top = `${am.y}%`;
+    marker.innerHTML = `<svg viewBox="0 0 24 24">${am.icon}</svg><span class="marker-label">${am.label}</span>`;
     amenitiesContainer.appendChild(marker);
   });
 }
@@ -414,10 +562,12 @@ function expandBubbleDetails(storeId) {
   const closeBtn = document.getElementById("btn-collapse-bubble-info");
   const infoBtn = document.getElementById("btn-show-modal");
 
+  if (!bubble || !panel) return; // Bezpieczeństwo
+
   bubble.classList.add("expanded");
   panel.classList.remove("hidden");
-  closeBtn.classList.remove("hidden");
-  infoBtn.innerText = "Zwiń opis";
+  if (closeBtn) closeBtn.classList.remove("hidden");
+  if (infoBtn) infoBtn.innerText = "Zwiń opis";
 
   loggerInstance.logEvent("EXPAND_STORE_DETAILS_BUBBLE", null, { storeId: store.id, storeName: store.name });
 }
@@ -523,6 +673,266 @@ function showRouteDismissButton(storeId) {
   document.getElementById("route-blocker-overlay").classList.remove("hidden");
 }
 
+// ========================================================
+// PATHFINDING (A*) – omijanie budynków
+// ========================================================
+
+const GRID_CELL_SIZE = 5; // rozmiar komórki w viewBox (10x10 px)
+
+// Sprawdza, czy punkt (x, y) jest w jakimkolwiek budynku
+function isPointInAnyBuilding(x, y, plan) {
+  // Sprawdzamy wszystkie polygony sklepów i pustych lokali
+  const allShapes = [...Object.values(plan.shops), ...Object.values(plan.emptyShops)];
+  
+  // Używamy SVG do sprawdzenia – tworzymy tymczasowy element
+  const testSvg = document.getElementById("stores-svg");
+  if (!testSvg) return false;
+  
+  // Sprawdzamy przez isPointInFill na każdym polygonie
+  for (const shape of allShapes) {
+    const el = document.getElementById(`store-${shape.storeId}`) || 
+               document.querySelector(`[data-shape-id="${shape.storeId}"]`);
+    if (el && el.isPointInFill) {
+      try {
+        if (el.isPointInFill(new DOMPoint(x, y))) return true;
+      } catch(e) {}
+    }
+  }
+  return false;
+}
+
+function getPathBounds(dString) {
+  // Wyciąga wszystkie liczby z ciągu "d" (np. "M120,200l10,10" -> [120, 200, 10, 10])
+  const numbers = dString.match(/-?\d+(\.\d+)?/g);
+  if (!numbers) return null;
+  
+  const xs = [];
+  const ys = [];
+  
+  // Parzyste to X, nieparzyste to Y (w przybliżeniu dla większości komend SVG)
+  for (let i = 0; i < numbers.length; i += 2) {
+    xs.push(parseFloat(numbers[i]));
+    if (numbers[i+1]) ys.push(parseFloat(numbers[i+1]));
+  }
+  
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys)
+  };
+}
+
+// Buduje siatkę: true = wolne, false = zablokowane (budynek)
+function buildGrid(plan) {
+  const cols = Math.ceil(842 / GRID_CELL_SIZE);
+  const rows = Math.ceil(595 / GRID_CELL_SIZE);
+  const grid = [];
+  
+  const tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  tempSvg.setAttribute("viewBox", "0 0 842 595");
+  tempSvg.style.position = "absolute";
+  tempSvg.style.visibility = "hidden";
+  document.body.appendChild(tempSvg);
+  
+  // 1. Rysujemy BASE (obrys budynku – zawiera korytarze)
+  const baseEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  baseEl.setAttribute("d", plan.basePath || plan.corridorPath);
+  baseEl.setAttribute("fill", "black");
+  tempSvg.appendChild(baseEl);
+
+  // 2. Rysujemy BUDYNKI (sklepy) – żeby je odjąć
+  const allShapes = [...Object.values(plan.shops), ...Object.values(plan.emptyShops)];
+  const elements = [];
+  
+  allShapes.forEach(shape => {
+    let el;
+    if (shape.type === "path") {
+      el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      el.setAttribute("d", shape.d);
+    } else if (shape.type === "polygon") {
+      el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      el.setAttribute("points", shape.points);
+    } else if (shape.type === "polyline") {
+      el = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      el.setAttribute("points", shape.points);
+    }
+    if (el) {
+      el.setAttribute("fill", "black");
+      tempSvg.appendChild(el);
+      elements.push(el);
+    }
+  });
+  
+  for (let row = 0; row < rows; row++) {
+    grid[row] = [];
+    for (let col = 0; col < cols; col++) {
+      const x = col * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+      const y = row * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+      
+      // Sprawdzamy, czy jesteśmy w BASE (obrysie budynku)
+      let inBase = false;
+      try {
+        if (baseEl.isPointInFill(new DOMPoint(x, y))) {
+          inBase = true;
+        }
+      } catch(e) {}
+      
+      // Sprawdzamy, czy jesteśmy w BUDYNKU (sklepie)
+      let inBuilding = false;
+      for (const el of elements) {
+        try {
+          if (el.isPointInFill(new DOMPoint(x, y))) {
+            inBuilding = true;
+            break;
+          }
+        } catch(e) {}
+      }
+      
+      // Wolne = w BASE, ale NIE w BUDYNKU
+      if (inBase && !inBuilding) {
+        grid[row][col] = 1; // korytarz
+      } else {
+        grid[row][col] = 0; // budynek lub czarne tło
+      }
+    }
+  }
+  
+  document.body.removeChild(tempSvg);
+  return grid;
+}
+
+// Algorytm A* – znajduje ścieżkę od startu do celu
+function findPath(startX, startY, endX, endY, grid) {
+  const cols = grid[0].length;
+  const rows = grid.length;
+  
+  let startCol = Math.floor(startX / GRID_CELL_SIZE);
+  let startRow = Math.floor(startY / GRID_CELL_SIZE);
+  const endCol = Math.floor(endX / GRID_CELL_SIZE);
+  const endRow = Math.floor(endY / GRID_CELL_SIZE);
+  
+  if (startCol < 0 || startCol >= cols || startRow < 0 || startRow >= rows) return null;
+  if (endCol < 0 || endCol >= cols || endRow < 0 || endRow >= rows) return null;
+
+  // Odblokowujemy cel
+  grid[endRow][endCol] = 1;
+
+  const openSet = new Map();
+  openSet.set(`${startCol},${startRow}`, { col: startCol, row: startRow, g: 0, f: 0, parent: null });
+  const closedSet = new Set();
+  const key = (c, r) => `${c},${r}`;
+  const heuristic = (c, r) => Math.abs(c - endCol) + Math.abs(r - endRow);
+  
+  while (openSet.size > 0) {
+    let currentKey = null;
+    let currentF = Infinity;
+    for (const [k, node] of openSet) {
+      if (node.f < currentF) { currentF = node.f; currentKey = k; }
+    }
+    const current = openSet.get(currentKey);
+    openSet.delete(currentKey);
+    
+    if (current.col === endCol && current.row === endRow) {
+      const path = [];
+      let node = current;
+      while (node) {
+        path.unshift({
+          x: node.col * GRID_CELL_SIZE + GRID_CELL_SIZE / 2,
+          y: node.row * GRID_CELL_SIZE + GRID_CELL_SIZE / 2
+        });
+        node = node.parent;
+      }
+      console.log('A* ZNALAZŁ ścieżkę!');
+      return path;
+    }
+    
+    closedSet.add(key(current.col, current.row));
+    
+    const neighbors = [
+      { dc: 0, dr: -1 }, { dc: 0, dr: 1 }, { dc: -1, dr: 0 }, { dc: 1, dr: 0 },
+      { dc: -1, dr: -1 }, { dc: 1, dr: -1 }, { dc: -1, dr: 1 }, { dc: 1, dr: 1 }
+    ];
+    
+    for (const n of neighbors) {
+      const nc = current.col + n.dc;
+      const nr = current.row + n.dr;
+      
+      // 1. BLOKADA WYJŚCIA POZA MAPĘ
+      if (nc < 0 || nc >= cols || nr < 0 || nr >= rows) continue;
+      if (closedSet.has(key(nc, nr))) continue;
+      
+      // 2. KARA ZA BUDYNEK
+      // const cellCost = grid[nr][nc] === 0 ? 1000 : 1;
+      // Wewnątrz findPath, w pętli sąsiadów:
+      const cellCost = grid[nr][nc] === 0 ? 1000 : 1; // Bardzo wysoki koszt za wejście w ścianę/czarne tło 
+      
+      const cost = (n.dc !== 0 && n.dr !== 0) ? 1.414 : 1;
+      const g = current.g + (cost * cellCost);
+      const h = heuristic(nc, nr);
+      const f = g + h;
+      
+      const existing = openSet.get(key(nc, nr));
+      if (existing) {
+        if (g < existing.g) {
+          existing.g = g;
+          existing.f = f;
+          existing.parent = current;
+        }
+      } else {
+        openSet.set(key(nc, nr), { col: nc, row: nr, g, f, parent: current });
+      }
+    }
+  }
+  
+  console.log('A* NIE znalazł ścieżki.');
+  return null;
+}
+
+function findNearestFreeCell(grid, col, row) {
+  if (grid[row] && grid[row][col] !== null) return { col, row };
+  for (let r = 1; r < 20; r++) {
+    for (let dc = -r; dc <= r; dc++) {
+      for (let dr = -r; dr <= r; dr++) {
+        const nc = col + dc;
+        const nr = row + dr;
+        if (nc >= 0 && nc < grid[0].length && nr >= 0 && nr < grid.length && grid[nr][nc] !== null) {
+          return { col: nc, row: nr };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function getCenterOf(selector) {
+  // Szukamy TYLKO w aktualnie wyrenderowanej warstwie piętra
+  const layer = document.getElementById('stores-svg-layer');
+  if (!layer) return null;
+  
+  const el = layer.querySelector(selector);
+  if (!el) return null;
+  
+  if (el instanceof SVGElement) {
+    try {
+      const bbox = el.getBBox();
+      if (bbox.width === 0 && bbox.height === 0) return null; // ukryty
+      return { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+    } catch(e) { return null; }
+  }
+  
+  // Dla zwykłych divów (np. pinezki)
+  const rect = el.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+  
+  const svg = document.getElementById("stores-svg");
+  const svgRect = svg.getBoundingClientRect();
+  const svgX = (rect.left + rect.width / 2 - svgRect.left) / svgRect.width * 842;
+  const svgY = (rect.top + rect.height / 2 - svgRect.top) / svgRect.height * 595;
+  
+  return { x: svgX, y: svgY };
+}
+
 function executeRouteNavigation(storeId) {
   const store = STORES_CATALOG.find(s => s.id === storeId);
   if (!store) return;
@@ -530,41 +940,91 @@ function executeRouteNavigation(storeId) {
   hideActionBubble();
   showRouteDismissButton(storeId);
 
-  const infomatCoords = { x: 500, y: 350 };
-  const escalatorsCoords = { x: 350, y: 385 };
-
-  if (store.floor === 1) {
+  // 1. Zawsze przechodzimy na piętro 1 (tam jest infomat)
+  if (currentActiveFloor !== 1) {
     switchFloorTab(1);
-    const storeX = (store.col + store.w / 2) * (1000 / 12);
-    const storeY = (store.row + store.h / 2) * (700 / 10);
-    drawSimplePath(infomatCoords.x, infomatCoords.y, storeX, storeY);
-    showRouteBanner(`Nawigacja do: ${store.name} (Poziom 1)`);
-    return;
   }
 
-  switchFloorTab(1);
-  drawSimplePath(infomatCoords.x, infomatCoords.y, escalatorsCoords.x, escalatorsCoords.y);
-  showRouteBanner(`Sklep znajduje się na Poziomie ${store.floor}. Idź do schodów ruchomych...`);
-
   setTimeout(() => {
-    if (!activeRouteStoreId) return;
-    switchFloorTab(store.floor);
-    const targetStoreX = (store.col + store.w / 2) * (1000 / 12);
-    const targetStoreY = (store.row + store.h / 2) * (700 / 10);
+    // 2. Pobieramy infomat i schody Z PIĘTRA 1
+    const INFOMAT = getCenterOf('#you-are-here-pin') || { x: 421, y: 297.5 };
+    const ESCALATORS_F1 = getCenterOf('#escalator-1') || { x: 421, y: 297.5 };
 
-    drawSimplePath(escalatorsCoords.x, escalatorsCoords.y, targetStoreX, targetStoreY);
-    showRouteBanner(`Poziom ${store.floor}: idź ze schodów do ${store.name}`);
+    console.log('Piętro 1. Infomat:', INFOMAT, 'Schody F1:', ESCALATORS_F1);
 
-    const targetBlock = document.getElementById(`store-${store.id}`);
-    if (targetBlock) targetBlock.classList.add("selected");
-  }, 2200);
+    // 3. Rysujemy od infomatu do schodów (na piętrze 1)
+    drawSimplePath(INFOMAT.x, INFOMAT.y, ESCALATORS_F1.x, ESCALATORS_F1.y);
+    showRouteBanner(`Idź do schodów ruchomych...`);
+
+    // 4. Przełączamy na piętro sklepu
+    setTimeout(() => {
+      if (!activeRouteStoreId) return;
+      
+      switchFloorTab(store.floor);
+
+      setTimeout(() => {
+        // 5. Pobieramy schody Z PIĘTRA SKLEPU (nie z piętra 1!)
+        const ESCALATORS_TARGET = getCenterOf('#escalator-1') || { x: 421, y: 297.5 };
+        console.log('Piętro', store.floor, 'Schody docelowe:', ESCALATORS_TARGET);
+
+        // 6. Pobieramy sklep
+        const newStoreEl = document.getElementById(`store-${storeId}`);
+        if (newStoreEl) {
+          const bbox2 = newStoreEl.getBBox();
+          const target2 = { x: bbox2.x + bbox2.width / 2, y: bbox2.y + bbox2.height / 2 };
+          
+          // 7. Rysujemy od schodów NA TYM PIĘTRZE do sklepu
+          drawSimplePath(ESCALATORS_TARGET.x, ESCALATORS_TARGET.y, target2.x, target2.y);
+          showRouteBanner(`Poziom ${store.floor}: idź do ${store.name}`);
+        }
+      }, 300);
+    }, 1800);
+  }, 300);
 }
 
 function drawSimplePath(x1, y1, x2, y2) {
   const pathSvg = document.getElementById("route-line");
-  const midY = 360;
-  const dPath = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
-  pathSvg.setAttribute("d", dPath);
+  if (!pathSvg) return;
+
+  // LOG: sprawdzamy, skąd startuje linia
+  console.log('Rysowanie trasy od:', x1, y1, 'do:', x2, y2);
+
+  let plan = null;
+  if (currentActiveFloor === 0 && typeof FLOOR_PLAN_0 !== "undefined") plan = FLOOR_PLAN_0;
+  else if (currentActiveFloor === 1 && typeof FLOOR_PLAN_1 !== "undefined") plan = FLOOR_PLAN_1;
+  else if (currentActiveFloor === 2 && typeof FLOOR_PLAN_2 !== "undefined") plan = FLOOR_PLAN_2;
+
+  if (!plan) {
+    // Fallback jeśli nie ma planu (prosta linia)
+    pathSvg.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
+    return;
+  }
+
+  const grid = buildGrid(plan);
+
+  // Odblokowujemy cel, żeby A* mógł tam dojść
+  const endCol = Math.floor(x2 / GRID_CELL_SIZE);
+  const endRow = Math.floor(y2 / GRID_CELL_SIZE);
+  if (grid[endRow] && grid[endRow][endCol] === 0) {
+    grid[endRow][endCol] = 1;
+  }
+
+  const path = findPath(x1, y1, x2, y2, grid);
+
+  if (!path || path.length === 0) {
+    // Jeśli A* nie znalazł, rysujemy prostą linię awaryjnie
+    console.log('A* nie znalazł, rysuję prostą.');
+    pathSvg.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
+    return;
+  }
+
+  // Rysowanie
+  let d = `M ${x1} ${y1}`;
+  path.forEach(pt => {
+    d += ` L ${pt.x} ${pt.y}`;
+  });
+  d += ` L ${x2} ${y2}`;
+  pathSvg.setAttribute("d", d);
 }
 
 function clearNavigationRoute() {
@@ -1279,4 +1739,36 @@ function initResearcherDock() {
   document.getElementById("btn-export-events").addEventListener("click", () => loggerInstance.exportEventsCSV());
   document.getElementById("btn-export-aoi").addEventListener("click", () => loggerInstance.exportAoiCSV());
   document.getElementById("btn-clear-events").addEventListener("click", () => loggerInstance.clearLogs());
+}
+
+function drawRouteViaCorridors(x1, y1, x2, y2, floor) {
+  const pathSvg = document.getElementById("route-line");
+  if (!pathSvg) return;
+
+  const waypoints = NAV_WAYPOINTS[floor] || NAV_WAYPOINTS[0];
+
+  // Znajdź najbliższy węzeł dla startu i celu
+  const findNearest = (x, y) => {
+    let minDist = Infinity;
+    let nearest = null;
+    waypoints.forEach(wp => {
+      const dist = Math.hypot(wp.x - x, wp.y - y);
+      if (dist < minDist) { minDist = dist; nearest = wp; }
+    });
+    return nearest;
+  };
+
+  const startNode = findNearest(x1, y1);
+  const endNode = findNearest(x2, y2);
+
+  // Buduj ścieżkę: start -> najbliższy węzeł -> (środek, jeśli trzeba) -> węzeł końcowy -> cel
+  let d = `M ${x1} ${y1} L ${startNode.x} ${startNode.y}`;
+
+  if (startNode.id !== endNode.id) {
+    const centerNode = waypoints.find(wp => wp.id === "center");
+    d += ` L ${centerNode.x} ${centerNode.y} L ${endNode.x} ${endNode.y}`;
+  }
+
+  d += ` L ${x2} ${y2}`;
+  pathSvg.setAttribute("d", d);
 }

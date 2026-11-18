@@ -137,12 +137,36 @@ html, body {
 #building-base {
   width: 100%;
   height: 100%;
-  background: var(--building-bg);
-  border: 5px solid #161718;
-  border-radius: 18px;
-  box-shadow: 28px 45px 50px var(--shadow-dark);
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+}
+
+#building-base::before {
+  content: "";
+  position: absolute;
+  width: 140%;
+  height: 85%;
+  left: -20%;
+  top: 5%;
+  opacity: 0.1;
+  clip-path: polygon(
+    5% 0,
+    95% 0,
+    100% 10%,
+    100% 90%,
+    90% 100%,
+    10% 100%,
+    0 90%,
+    0 10%
+  );
+
+  background: #757575;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+
+  z-index: -1;
 }
 
 .corridor-layer {
@@ -277,8 +301,8 @@ html, body {
 
 .infomat-pin {
   position: absolute;
-  top: 50%;
   left: 50%;
+  top: 50%;
   transform: translate(-50%, -50%) translateZ(16px);
   display: flex;
   flex-direction: column;
@@ -317,9 +341,11 @@ html, body {
 
 .nav-overlay {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  width: 180%;      /* to samo co .stores-svg */
+  height: 180%;
+  left: -40%;
+  top: -40%;
+  overflow: visible;
   pointer-events: none;
   z-index: 30;
 }
@@ -585,14 +611,13 @@ html, body {
 #bottom-controls {
   position: absolute;
   bottom: 24px;
-  left: 240px;
-  right: 140px;
+  right: 40px; /* Odstęp od prawej krawędzi */
   height: 64px;
   background: transparent;
   border: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px; /* Odstęp między przyciskami pięter a "Gdzie jestem" */
   pointer-events: none;
   z-index: 100;
 }
@@ -2562,4 +2587,145 @@ html, body {
   font-size: 12px;
   font-weight: 800;
   color: var(--primary-purple);
+}
+
+/* ==== SVG MAPA SKLEPÓW (PIĘTRO 0) ==== */
+.stores-svg {
+  position: absolute;
+  inset: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  z-index: 10;
+  overflow: visible;
+}
+
+.shop-rect {
+  fill: var(--store-bg, #E8E8E8);
+  stroke: #bfbfbf;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+  filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
+}
+
+.shop-rect:hover {
+  fill: #F0E6FF;
+  stroke: var(--primary-purple, #2E0854);
+  stroke-width: 2;
+}
+
+.shop-rect.selected {
+  fill: var(--store-selected, #D32F2F);
+  stroke: #8B0000;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px rgba(211, 47, 47, 0.9));
+}
+
+.shop-label {
+  font-size: 13px;
+  font-weight: 800;
+  fill: #1a1a1a;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+.shop-rect.selected + .shop-label,
+.shop-rect.selected ~ .shop-label {
+  fill: #FFFFFF;
+}
+
+/* Małe sklepy – etykieta tylko po zaznaczeniu (opcjonalnie) */
+.small-shop + .shop-label {
+  display: none;
+}
+
+.stores-svg {
+  position: absolute;
+  inset: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  z-index: 10;
+  overflow: visible;
+}
+
+.shop-polygon {
+  fill: #E8E8E8;
+  stroke: #999;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.shop-polygon:hover {
+  fill: #F0E6FF;
+  stroke: #2E0854;
+  stroke-width: 2;
+}
+
+.shop-polygon.selected {
+  fill: #D32F2F;
+  stroke: #8B0000;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(211, 47, 47, 0.9));
+}
+
+.empty-shop {
+  fill: #D0D0D0;
+  stroke: #B0B0B0;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.shop-label {
+  font-size: 9px;
+  font-weight: 800;
+  fill: #1a1a1a;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+.shop-label.selected {
+  fill: #FFFFFF;
+}
+
+.facility-bg {
+  fill: #FFFFFF;
+  stroke: #2E0854; /* Twój firmowy fiolet */
+  stroke-width: 4;
+  filter: url(#shadow);
+}
+
+.facility-bubble {
+  fill: #FFFFFF;
+  stroke: #2E0854;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+}
+
+.facility-icon-group {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.5); /* dostosuj: 0.3 = 30% rozmiaru, 0.5 = 50%, itd. */
+}
+
+.stores-svg {
+  position: absolute;
+  width: 180%;
+  height: 180%;
+  left: -40%;
+  top: -40%;
+  overflow: visible;
+  z-index: 10;
+}
+
+#building-base {
+  /* ... to co masz ... */
+  overflow: visible;   /* ZMIEŃ z hidden na visible */
+}
+
+#map-viewport {
+  /* ... to co masz ... */
+  overflow: hidden;    /* to zostaw – żeby nie wyciekało poza kiosk */
 }
