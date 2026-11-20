@@ -8,7 +8,7 @@
 const STORES_CATALOG = [
   // ==================== POZIOM 0 ====================
   // Góra
-  { id: "s0_stokrotka", name: "Stokrotka", floor: 0, logo: "stokrotka.png", category: "Spożywcze", isLarge: true, col: 1, row: 1, w: 3, h: 3 },
+  { id: "s0_stokrotka", name: "Stokrotka", floor: 0, logo: "img/stokrotka.png", category: "Spożywcze", isLarge: true, col: 1, row: 1, w: 3, h: 3 },
   { id: "s0_rossmann", name: "Rossmann", floor: 0, logo: "rossmann_org.png", category: "Drogeria", isLarge: true, col: 4, row: 1, w: 3, h: 3 },
   { id: "s0_douglas", name: "Douglas", floor: 0, logo: "Zrzut_ekranu_2025_04_24_o_092127.png", category: "Perfumeria", isLarge: true, col: 7, row: 1, w: 3, h: 3 },
   { id: "s0_empik", name: "Empik", floor: 0, logo: "empik.png", category: "Książki", isLarge: true, col: 10, row: 1, w: 3, h: 3 },
@@ -74,11 +74,11 @@ const STORES_CATALOG = [
   { id: "s1_wrangler", name: "Wrangler", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   { id: "s1_verona", name: "Verona", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   { id: "s1_vistula", name: "Vistula", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
-  { id: "s1_mohito", name: "Mohito", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_ochnik", name: "Ochnik", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   { id: "s1_greenpoint", name: "Greenpoint", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   { id: "s1_taranko", name: "Taranko", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   { id: "s1_godan", name: "Godan", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Upominki" },
-
+{ id: "s1_tatuum", name: "Tatuum", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   // ==================== POZIOM 2 ====================
   // Góra
   { id: "s2_cinema", name: "Cinema City", floor: 2, logo: "cinemacity_color_6.png", category: "Kino", isLarge: true, col: 1, row: 1, w: 6, h: 4 },

@@ -309,13 +309,38 @@ function renderStoresForFloor(floor) {
       svgLayer.appendChild(el);
 
       const bbox = el.getBBox();
-      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      label.setAttribute("x", bbox.x + bbox.width / 2);
-      label.setAttribute("y", bbox.y + bbox.height / 2);
-      label.setAttribute("class", "shop-label");
-      label.setAttribute("data-label-for", shop.storeId);
-      label.textContent = shop.label;
-      svgLayer.appendChild(label);
+      //const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      //label.setAttribute("x", bbox.x + bbox.width / 2);
+      //label.setAttribute("y", bbox.y + bbox.height / 2);
+      //label.setAttribute("class", "shop-label");
+      //label.setAttribute("data-label-for", shop.storeId);
+      //label.textContent = shop.label;
+      //svgLayer.appendChild(label);
+      // LOGO (z obsługą ręcznego offsetu)
+      if (shop.logo) {
+        const bbox = el.getBBox();
+        const logoSize = Math.min(bbox.width, bbox.height) * 0.6; 
+        
+        // Sprawdzamy, czy w danych sklepu jest ręczny offset
+        const offsetX = shop.logoOffset?.x || 0;
+        const offsetY = shop.logoOffset?.y || 0;
+        
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        img.setAttribute("href", shop.logo);
+        img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", shop.logo);
+        
+        // Wyliczamy standardowy środek i dodajemy offset
+        img.setAttribute("x", bbox.x + (bbox.width - logoSize) / 2 + offsetX);
+        img.setAttribute("y", bbox.y + (bbox.height - logoSize) / 2 + offsetY);
+        img.setAttribute("width", logoSize);
+        img.setAttribute("height", logoSize);
+        img.setAttribute("class", "shop-logo");
+        img.setAttribute("data-label-for", shop.storeId);
+        img.setAttribute("pointer-events", "none");
+        img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        
+        svgLayer.appendChild(img);
+      }
       
     });
 
@@ -1773,4 +1798,41 @@ function drawRouteViaCorridors(x1, y1, x2, y2, floor) {
 
   d += ` L ${x2} ${y2}`;
   pathSvg.setAttribute("d", d);
+}
+
+function getShapeCentroid(shape) {
+  let points = [];
+
+  if (shape.points) {
+    // Dla polygon/polyline: "x1,y1 x2,y2 ..." lub "x1 y1 x2 y2 ..."
+    const coords = shape.points.trim().split(/\s+/);
+    coords.forEach(c => {
+      if (c.includes(',')) {
+        const [x, y] = c.split(',').map(parseFloat);
+        points.push({ x, y });
+      }
+    });
+    // Jeśli format "x1 y1 x2 y2 ..." (bez przecinków)
+    if (points.length === 0) {
+      const nums = coords.map(parseFloat);
+      for (let i = 0; i < nums.length; i += 2) {
+        points.push({ x: nums[i], y: nums[i + 1] });
+      }
+    }
+  } else if (shape.d) {
+    // Dla path: wyciągamy wszystkie liczby i traktujemy jako x,y
+    const nums = shape.d.match(/-?\d+(\.\d+)?/g);
+    if (nums) {
+      for (let i = 0; i < nums.length; i += 2) {
+        points.push({ x: parseFloat(nums[i]), y: parseFloat(nums[i + 1] || 0) });
+      }
+    }
+  }
+
+  if (points.length === 0) return null;
+
+  // Środek ciężkości = średnia wszystkich punktów
+  let sumX = 0, sumY = 0;
+  points.forEach(p => { sumX += p.x; sumY += p.y; });
+  return { x: sumX / points.length, y: sumY / points.length };
 }
