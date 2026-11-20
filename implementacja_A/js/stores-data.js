@@ -8,7 +8,7 @@
 const STORES_CATALOG = [
   // ==================== POZIOM 0 ====================
   // Góra
-  { id: "s0_stokrotka", name: "Stokrotka", floor: 0, logo: "stokrotka.png", category: "Spożywcze", isLarge: true, col: 1, row: 1, w: 3, h: 3 },
+  { id: "s0_stokrotka", name: "Stokrotka", floor: 0, logo: "img/stokrotka.png", category: "Spożywcze", isLarge: true, col: 1, row: 1, w: 3, h: 3 },
   { id: "s0_rossmann", name: "Rossmann", floor: 0, logo: "rossmann_org.png", category: "Drogeria", isLarge: true, col: 4, row: 1, w: 3, h: 3 },
   { id: "s0_douglas", name: "Douglas", floor: 0, logo: "Zrzut_ekranu_2025_04_24_o_092127.png", category: "Perfumeria", isLarge: true, col: 7, row: 1, w: 3, h: 3 },
   { id: "s0_empik", name: "Empik", floor: 0, logo: "empik.png", category: "Książki", isLarge: true, col: 10, row: 1, w: 3, h: 3 },
@@ -32,6 +32,22 @@ const STORES_CATALOG = [
   { id: "s0_grycan", name: "Grycan", floor: 0, logo: "Grycan_logo_bez_na_brazowym.png", category: "Lody", isLarge: false, col: 10, row: 10, w: 1, h: 1 },
   { id: "s0_fielmann", name: "Fielmann", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Optyk", isLarge: false, col: 11, row: 10, w: 1, h: 1 },
   { id: "s0_tiger", name: "Flying Tiger", floor: 0, logo: "FTC_logo_800x400.png", category: "Upominki", isLarge: false, col: 12, row: 10, w: 1, h: 1 },
+  { id: "s0_tous", name: "Tous", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Jubiler" },
+  { id: "s0_pandora", name: "Pandora", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Jubiler" },
+  { id: "s0_hdrey", name: "HDREY", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Drogeria" },
+  { id: "s0_molton", name: "Molton", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Moda" },
+  { id: "s0_swiat", name: "Świat GSM", floor: 0, logo: "logo_twoj_optyk_1.png", category: "GSM" },
+  { id: "s0_vision", name: "Vision Express", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Optyk" },
+  { id: "s0_wittchen", name: "Wittchen", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Moda" },
+  { id: "s0_rylko", name: "Ryłko", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Moda" },
+  { id: "s0_wojas", name: "Wojas", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Moda" },
+  { id: "s0_solar", name: "Solar", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Moda" },
+  { id: "s0_venezia", name: "VENEZIA", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Moda" },
+  { id: "s0_goraco", name: "Gorąco Polecam", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Kawiarnia" },
+  { id: "s0_rituals", name: "Rituals", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Drogeria" },
+  { id: "s0_play", name: "Play", floor: 0, logo: "logo_twoj_optyk_1.png", category: "GSM" },
+  { id: "s0_czas", name: "Czas na Herbatę", floor: 0, logo: "logo_twoj_optyk_1.png", category: "Spożywcze" },
+
 
   // ==================== POZIOM 1 ====================
   // Góra
@@ -54,7 +70,15 @@ const STORES_CATALOG = [
   { id: "s1_gatta", name: "Gatta", floor: 1, logo: "GATTA.png", category: "Odzież", isLarge: false, col: 7, row: 7, w: 1, h: 1 },
   { id: "s1_orange", name: "Orange", floor: 1, logo: "LOGO_RGB.png", category: "GSM", isLarge: false, col: 8, row: 7, w: 1, h: 1 },
   { id: "s1_tmobile", name: "T-Mobile", floor: 1, logo: "T_logo_rgb_p_2.png", category: "GSM", isLarge: false, col: 9, row: 7, w: 1, h: 1 },
-
+  { id: "s1_makalu", name: "MAKALU", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_wrangler", name: "Wrangler", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_verona", name: "Verona", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_vistula", name: "Vistula", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_ochnik", name: "Ochnik", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_greenpoint", name: "Greenpoint", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_taranko", name: "Taranko", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
+  { id: "s1_godan", name: "Godan", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Upominki" },
+{ id: "s1_tatuum", name: "Tatuum", floor: 1, logo: "T_logo_rgb_p_2.png", category: "Moda" },
   // ==================== POZIOM 2 ====================
   // Góra
   { id: "s2_cinema", name: "Cinema City", floor: 2, logo: "cinemacity_color_6.png", category: "Kino", isLarge: true, col: 1, row: 1, w: 6, h: 4 },
@@ -73,6 +97,7 @@ const STORES_CATALOG = [
   { id: "s2_sushi", name: "Express Sushi", floor: 2, logo: "Zrzut_ekranu_2025_10_1_o_150304.png", category: "Gastro", isLarge: false, col: 6, row: 5, w: 1, h: 1 },
   { id: "s2_thailong", name: "THAI LONG", floor: 2, logo: "THAI LONG", category: "Gastro", isLarge: false, col: 7, row: 5, w: 1, h: 1 },
   { id: "s2_magia", name: "Magia d'Italia", floor: 2, logo: "magia.jpg", category: "Lody", isLarge: false, col: 8, row: 5, w: 1, h: 1 },
+  { id: "s2_pizza", name: "Pizza Hut", floor: 2, logo: "pizzahut.jpg", category: "Gastro"},
   { id: "s2_costa2", name: "Costa Coffee", floor: 2, logo: "Costa_Coffee_RED_CMYK_1.jpg", category: "Kawiarnia", isLarge: false, col: 9, row: 5, w: 1, h: 1 }
 ];
 

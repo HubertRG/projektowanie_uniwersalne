@@ -13,14 +13,25 @@
       <div id="map-stage">
         <div id="building-base">
           <div id="corridor-layer" class="corridor-layer"></div>
-          <div id="stores-puzzle-grid" class="puzzle-grid"></div>
+          <div id="stores-puzzle-grid" class="puzzle-grid" style="display:none;"></div>
+<div id="stores-puzzle-grid" class="puzzle-grid" style="display:none;"></div>
+<svg id="stores-svg" class="stores-svg" viewBox="0 0 842 595" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  <g id="stores-svg-layer"></g>
+</svg>
           <div id="map-amenities-layer" class="amenities-layer"></div>
 
-          <svg id="nav-path-svg" class="nav-overlay" viewBox="0 0 1000 700">
-            <defs>
+<svg id="nav-path-svg" class="nav-overlay" viewBox="0 0 842 595">            <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#D32F2F" />
               </marker>
+              <clipPath id="corridor-clip">
+      <!-- To jest dynamicznie wstrzykiwane przez JS -->
+    </clipPath>
             </defs>
             <path id="route-line" d="" fill="none" stroke="#D32F2F" stroke-width="6" stroke-dasharray="10 8" />
           </svg>
@@ -90,9 +101,9 @@
     <!-- DOLNE STEROWANIE PIĘTRAMI -->
     <footer id="bottom-controls" data-aoi="floor_controls">
       <div class="floor-group">
-        <button class="floor-btn" data-floor="0" data-aoi="btn_floor_0">Piętro 0</button>
-        <button class="floor-btn active" data-floor="1" data-aoi="btn_floor_1">Piętro 1</button>
-        <button class="floor-btn" data-floor="2" data-aoi="btn_floor_2">Piętro 2</button>
+        <button class="floor-btn" data-floor="0" data-aoi="btn_floor_0">0</button>
+        <button class="floor-btn active" data-floor="1" data-aoi="btn_floor_1">1</button>
+        <button class="floor-btn" data-floor="2" data-aoi="btn_floor_2">2</button>
       </div>
       <button id="btn-where-am-i" class="where-btn" data-aoi="btn_where_am_i">
         <span class="where-icon">
