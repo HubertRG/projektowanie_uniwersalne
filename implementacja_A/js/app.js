@@ -309,13 +309,58 @@ function renderStoresForFloor(floor) {
       svgLayer.appendChild(el);
 
       const bbox = el.getBBox();
-      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      label.setAttribute("x", bbox.x + bbox.width / 2);
-      label.setAttribute("y", bbox.y + bbox.height / 2);
-      label.setAttribute("class", "shop-label");
-      label.setAttribute("data-label-for", shop.storeId);
-      label.textContent = shop.label;
-      svgLayer.appendChild(label);
+      //const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      //label.setAttribute("x", bbox.x + bbox.width / 2);
+      //label.setAttribute("y", bbox.y + bbox.height / 2);
+      //label.setAttribute("class", "shop-label");
+      //label.setAttribute("data-label-for", shop.storeId);
+      //label.textContent = shop.label;
+      //svgLayer.appendChild(label);
+      // LOGO (z obsługą ręcznego offsetu)
+      if (shop.logo) {
+        const bbox = el.getBBox();
+        // Bazowy rozmiar
+        let logoSize = Math.min(bbox.width, bbox.height) * 0.6; 
+        
+        // Skalowanie (domyślnie 1)
+        const scale = shop.logoScale || 1;
+        logoSize *= scale;
+
+        // Offset (domyślnie 0)
+        const offsetX = shop.logoOffset?.x || 0;
+        const offsetY = shop.logoOffset?.y || 0;
+
+        // Obrót (domyślnie 0)
+        const rotation = shop.logoRotation || 0;
+
+        // Obliczamy standardowy środek
+        const baseX = bbox.x + (bbox.width - logoSize) / 2 + offsetX;
+        const baseY = bbox.y + (bbox.height - logoSize) / 2 + offsetY;
+        
+        // Środek logo (do obrotu)
+        const centerX = baseX + logoSize / 2;
+        const centerY = baseY + logoSize / 2;
+
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        img.setAttribute("href", shop.logo);
+        img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", shop.logo);
+        
+        img.setAttribute("x", baseX);
+        img.setAttribute("y", baseY);
+        img.setAttribute("width", logoSize);
+        img.setAttribute("height", logoSize);
+        img.setAttribute("class", "shop-logo");
+        img.setAttribute("data-label-for", shop.storeId);
+        img.setAttribute("pointer-events", "none");
+        img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        
+        // Nakładamy obrót (jeśli jest)
+        if (rotation !== 0) {
+          img.setAttribute("transform", `rotate(${rotation}, ${centerX}, ${centerY})`);
+        }
+        
+        svgLayer.appendChild(img);
+      }
       
     });
 
@@ -937,48 +982,69 @@ function executeRouteNavigation(storeId) {
   const store = STORES_CATALOG.find(s => s.id === storeId);
   if (!store) return;
 
+  console.log('=== START NAWIGACJI ===');
+  console.log('Cel:', store.name, 'Piętro celu:', store.floor);
+  console.log('Obecne piętro (przed przełączeniem):', currentActiveFloor);
+
   hideActionBubble();
   showRouteDismissButton(storeId);
 
-  // 1. Zawsze przechodzimy na piętro 1 (tam jest infomat)
+    // --- PRZYPADEK 1: Sklep jest na piętrze 1 (tam gdzie infomat) ---
+  if (store.floor === 1) {
+    console.log('Przypadek 1: sklep na piętrze 1 – idziemy prosto');
+    const routeLine = document.getElementById("route-line");
+    if (routeLine) routeLine.setAttribute("d", "");
+    
+    // Upewniamy się, że jesteśmy na piętrze 1
+    if (currentActiveFloor !== 1) switchFloorTab(1);
+    
+    setTimeout(() => {
+      const storeEl = document.getElementById(`store-${storeId}`);
+      if (storeEl) {
+        const bbox = storeEl.getBBox();
+        const target = { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+        const INFOMAT = getCenterOf('#you-are-here-pin') || { x: 421, y: 297.5 };
+        drawSimplePath(INFOMAT.x, INFOMAT.y, target.x, target.y);
+        showRouteBanner(`Nawigacja do: ${store.name} (Poziom 1)`);
+      }
+    }, 300);
+    return;
+  }
+
+  // --- PRZYPADEK 2: Sklep na piętrze 0 lub 2 – zawsze przez schody ---
+  console.log('Przypadek 2: sklep na piętrze 0 lub 2 – idziemy przez schody');
+  
+  // Przełączamy na piętro 1
   if (currentActiveFloor !== 1) {
     switchFloorTab(1);
   }
 
   setTimeout(() => {
-    // 2. Pobieramy infomat i schody Z PIĘTRA 1
+    // Pobieramy infomat i schody z piętra 1
     const INFOMAT = getCenterOf('#you-are-here-pin') || { x: 421, y: 297.5 };
     const ESCALATORS_F1 = getCenterOf('#escalator-1') || { x: 421, y: 297.5 };
-
-    console.log('Piętro 1. Infomat:', INFOMAT, 'Schody F1:', ESCALATORS_F1);
-
-    // 3. Rysujemy od infomatu do schodów (na piętrze 1)
+    
+    // Rysujemy od infomatu do schodów
     drawSimplePath(INFOMAT.x, INFOMAT.y, ESCALATORS_F1.x, ESCALATORS_F1.y);
-    showRouteBanner(`Idź do schodów ruchomych...`);
+    showRouteBanner(`Poziom 1: idź do schodów...`);
 
-    // 4. Przełączamy na piętro sklepu
+    // Czekamy i przełączamy na piętro sklepu
     setTimeout(() => {
       if (!activeRouteStoreId) return;
       
       switchFloorTab(store.floor);
 
       setTimeout(() => {
-        // 5. Pobieramy schody Z PIĘTRA SKLEPU (nie z piętra 1!)
         const ESCALATORS_TARGET = getCenterOf('#escalator-1') || { x: 421, y: 297.5 };
-        console.log('Piętro', store.floor, 'Schody docelowe:', ESCALATORS_TARGET);
-
-        // 6. Pobieramy sklep
         const newStoreEl = document.getElementById(`store-${storeId}`);
         if (newStoreEl) {
           const bbox2 = newStoreEl.getBBox();
           const target2 = { x: bbox2.x + bbox2.width / 2, y: bbox2.y + bbox2.height / 2 };
-          
-          // 7. Rysujemy od schodów NA TYM PIĘTRZE do sklepu
           drawSimplePath(ESCALATORS_TARGET.x, ESCALATORS_TARGET.y, target2.x, target2.y);
           showRouteBanner(`Poziom ${store.floor}: idź do ${store.name}`);
         }
       }, 300);
-    }, 1800);
+    }, 2500);
   }, 300);
 }
 
@@ -1033,6 +1099,8 @@ function clearNavigationRoute() {
 }
 
 function switchFloorTab(floor) {
+  const routeLine = document.getElementById("route-line");
+  if (routeLine) routeLine.setAttribute("d", "");
   // Automatycznie odznacz sklep przy zmianie piętra
   deselectStore(false);
 
@@ -1771,4 +1839,41 @@ function drawRouteViaCorridors(x1, y1, x2, y2, floor) {
 
   d += ` L ${x2} ${y2}`;
   pathSvg.setAttribute("d", d);
+}
+
+function getShapeCentroid(shape) {
+  let points = [];
+
+  if (shape.points) {
+    // Dla polygon/polyline: "x1,y1 x2,y2 ..." lub "x1 y1 x2 y2 ..."
+    const coords = shape.points.trim().split(/\s+/);
+    coords.forEach(c => {
+      if (c.includes(',')) {
+        const [x, y] = c.split(',').map(parseFloat);
+        points.push({ x, y });
+      }
+    });
+    // Jeśli format "x1 y1 x2 y2 ..." (bez przecinków)
+    if (points.length === 0) {
+      const nums = coords.map(parseFloat);
+      for (let i = 0; i < nums.length; i += 2) {
+        points.push({ x: nums[i], y: nums[i + 1] });
+      }
+    }
+  } else if (shape.d) {
+    // Dla path: wyciągamy wszystkie liczby i traktujemy jako x,y
+    const nums = shape.d.match(/-?\d+(\.\d+)?/g);
+    if (nums) {
+      for (let i = 0; i < nums.length; i += 2) {
+        points.push({ x: parseFloat(nums[i]), y: parseFloat(nums[i + 1] || 0) });
+      }
+    }
+  }
+
+  if (points.length === 0) return null;
+
+  // Środek ciężkości = średnia wszystkich punktów
+  let sumX = 0, sumY = 0;
+  points.forEach(p => { sumX += p.x; sumY += p.y; });
+  return { x: sumX / points.length, y: sumY / points.length };
 }
