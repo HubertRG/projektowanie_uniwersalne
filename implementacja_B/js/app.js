@@ -1433,33 +1433,102 @@ function initServicesGridModule() {
   if (locateCinemaBtn) locateCinemaBtn.addEventListener("click", () => navigateToStoreOnMap("s2_cinema"));
 }
 
-function initCinemaRepertoireModule() {
-  const tbody = document.getElementById("cinema-repertoire-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+let selectedCinemaLetter = "ALL";
 
-  CINEMA_REPERTOIRE_DATA.forEach(movie => {
-    const tr = document.createElement("tr");
-    const hoursHtml = movie.hours.map(h => `<span class="seance-chip">${h}</span>`).join("");
+function initCinemaRepertoireModule() {
+  const filterBar = document.getElementById("cinema-alpha-filter");
+  if (!filterBar) return;
+
+  // Wyodrębnij tylko te pierwsze litery, dla których istnieją filmy w repertuarze
+  const letters = Array.from(
+    new Set(CINEMA_REPERTOIRE_DATA.map(m => m.title.trim().charAt(0).toUpperCase()))
+  ).sort((a, b) => a.localeCompare(b, "pl"));
+
+  filterBar.innerHTML = "";
+
+  const allBtn = document.createElement("button");
+  allBtn.type = "button";
+  allBtn.className = "alpha-filter-btn active";
+  allBtn.setAttribute("data-aoi", "btn_cinema_letter_ALL");
+  allBtn.innerText = `WSZYSTKIE (${CINEMA_REPERTOIRE_DATA.length})`;
+  allBtn.addEventListener("click", () => {
+    selectedCinemaLetter = "ALL";
+    setActiveCinemaLetterBtn(allBtn);
+    renderCinemaMovies("ALL");
+  });
+  filterBar.appendChild(allBtn);
+
+  letters.forEach(letter => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "alpha-filter-btn";
+    btn.setAttribute("data-aoi", `btn_cinema_letter_${letter}`);
+    btn.innerText = letter;
+    btn.addEventListener("click", () => {
+      selectedCinemaLetter = letter;
+      setActiveCinemaLetterBtn(btn);
+      renderCinemaMovies(letter);
+    });
+    filterBar.appendChild(btn);
+  });
+
+  renderCinemaMovies("ALL");
+}
+
+function setActiveCinemaLetterBtn(activeBtn) {
+  document.querySelectorAll(".alpha-filter-btn").forEach(b => b.classList.remove("active"));
+  activeBtn.classList.add("active");
+}
+
+function renderCinemaMovies(letterFilter) {
+  const container = document.getElementById("cinema-repertoire-body");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const now = new Date();
+  const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+
+  const filtered = letterFilter === "ALL"
+    ? CINEMA_REPERTOIRE_DATA
+    : CINEMA_REPERTOIRE_DATA.filter(m => m.title.trim().charAt(0).toUpperCase() === letterFilter);
+
+  filtered.forEach(movie => {
+    const card = document.createElement("div");
+    card.className = "cinema-movie-card";
+    card.setAttribute("data-aoi", `cinema_movie_${movie.title.replace(/\s+/g, "_")}`);
+
+    let foundNext = false;
+    const hoursHtml = movie.hours.map(h => {
+      const [hh, mm] = h.split(":").map(Number);
+      const seanceMins = hh * 60 + mm;
+      if (seanceMins < currentTotalMins) {
+        return `<span class="seance-chip past">${h}</span>`;
+      }
+      if (!foundNext) {
+        foundNext = true;
+        return `<span class="seance-chip next-up" title="Najbliższy seans">${h}</span>`;
+      }
+      return `<span class="seance-chip">${h}</span>`;
+    }).join("");
+
     const dubbingHtml = movie.dubbing
       ? `<span class="dubbing-badge">DUBBING</span>`
       : `<span class="subtitles-badge">NAPISY</span>`;
 
-    tr.innerHTML = `
-      <td>
-        <div class="td-movie-info">
+    card.innerHTML = `
+      <div class="cinema-movie-left">
+        <div class="cinema-movie-title-row">
           <span class="movie-title-text">${movie.title}</span>
-          <span class="movie-meta-text">${movie.genre} • ${movie.duration}</span>
-        </div>
-      </td>
-      <td>
-        <div class="seances-cell">
-          <div class="seance-hours-group">${hoursHtml}</div>
           ${dubbingHtml}
         </div>
-      </td>
+        <span class="movie-meta-text">${movie.genre} • Czas trwania: ${movie.duration}</span>
+      </div>
+      <div class="cinema-movie-right">
+        <div class="seance-hours-group">${hoursHtml}</div>
+      </div>
     `;
-    tbody.appendChild(tr);
+
+    container.appendChild(card);
   });
 }
 
@@ -1629,10 +1698,45 @@ function initPromoModule() {
   });
 }
 
+// ========================================================
+// KOMUNIKACJA — ROZKŁAD PRZYSTANKU LUB ROZKŁAD LINII
+// ========================================================
+let transitViewMode = "stop"; // "stop" = wyłącznie tablica odjazdów z przystanku | "line" = wyłącznie rozkład linii
+
 function initTransitModule() {
+  const btnStopMode = document.getElementById("btn-mode-stop-departures");
+  const btnLineMode = document.getElementById("btn-mode-line-schedule");
+
+  if (btnStopMode && btnLineMode) {
+    btnStopMode.addEventListener("click", () => switchTransitViewMode("stop"));
+    btnLineMode.addEventListener("click", () => switchTransitViewMode("line"));
+  }
+
   renderTransitStopsList();
   renderTransitLinesList(selectedStopId);
-  renderTransitSchedule(selectedStopId, selectedLineNum);
+  switchTransitViewMode("stop");
+}
+
+function switchTransitViewMode(mode) {
+  transitViewMode = mode;
+  const btnStopMode = document.getElementById("btn-mode-stop-departures");
+  const btnLineMode = document.getElementById("btn-mode-line-schedule");
+  const stopBoard = document.getElementById("transit-stop-board");
+  const lineWrapper = document.getElementById("transit-line-schedule-wrapper");
+
+  if (btnStopMode) btnStopMode.classList.toggle("active", mode === "stop");
+  if (btnLineMode) btnLineMode.classList.toggle("active", mode === "line");
+
+  // Wyświetlanie TYLKO jednego widoku naraz
+  if (mode === "stop") {
+    stopBoard.classList.remove("hidden");
+    lineWrapper.classList.add("hidden");
+    renderStopDeparturesBoard(selectedStopId);
+  } else {
+    stopBoard.classList.add("hidden");
+    lineWrapper.classList.remove("hidden");
+    renderTransitSchedule(selectedStopId, selectedLineNum);
+  }
 }
 
 function renderTransitStopsList() {
@@ -1642,16 +1746,20 @@ function renderTransitStopsList() {
 
   TRANSIT_DATA.forEach(stop => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.className = `transit-stop-btn ${stop.stopId === selectedStopId ? "active" : ""}`;
     btn.setAttribute("data-aoi", `btn_transit_stop_${stop.stopId}`);
     btn.innerHTML = `<span>📍 ${stop.stopName}</span><span>${stop.lines.length} linii</span>`;
+
     btn.addEventListener("click", () => {
       selectedStopId = stop.stopId;
       selectedLineNum = stop.lines[0].num;
       renderTransitStopsList();
       renderTransitLinesList(selectedStopId);
-      renderTransitSchedule(selectedStopId, selectedLineNum);
+      // Wybór przystanku wyświetla tablicę odjazdów dla tego przystanku
+      switchTransitViewMode("stop");
     });
+
     container.appendChild(btn);
   });
 }
@@ -1667,42 +1775,198 @@ function renderTransitLinesList(stopId) {
   stopData.lines.forEach(line => {
     const card = document.createElement("button");
     card.type = "button";
-    card.className = `transit-line-card ${line.num === selectedLineNum ? "active" : ""}`;
+    // Podświetlenie aktywnej linii tylko wtedy, gdy oglądamy rozkład linii
+    const isActive = (transitViewMode === "line" && line.num === selectedLineNum);
+    card.className = `transit-line-card ${isActive ? "active" : ""}`;
     card.setAttribute("data-aoi", `card_transit_line_${line.num}`);
+
+    // Wyłącznie numer linii oraz kierunek końcowy (bez powtarzania nazwy przystanku)
     card.innerHTML = `
       <div class="transit-line-num">${line.num}</div>
       <div class="transit-line-route">
-        <span>${line.stop}</span>
-        <span class="transit-route-arrow">→</span>
-        <span>${line.dest}</span>
+        <span class="transit-route-arrow">➔</span>
+        <span>Kierunek: ${line.dest}</span>
       </div>
     `;
+
     card.addEventListener("click", () => {
       selectedLineNum = line.num;
+      switchTransitViewMode("line");
       renderTransitLinesList(stopId);
-      renderTransitSchedule(stopId, selectedLineNum);
     });
+
     container.appendChild(card);
   });
 }
 
+function getUpcomingDeparturesForLine(lineData, nowDate, count = 3) {
+  const nowTotalMins = nowDate.getHours() * 60 + nowDate.getMinutes();
+  const allDepartures = [];
+
+  lineData.schedule.forEach(row => {
+    const h = parseInt(row.hour, 10);
+    const minsArray = row.mins.split(",").map(m => parseInt(m.trim(), 10));
+    minsArray.forEach(m => {
+      const total = h * 60 + m;
+      allDepartures.push({
+        hourStr: row.hour,
+        minStr: String(m).padStart(2, "0"),
+        totalMins: total,
+        diffMins: total - nowTotalMins
+      });
+    });
+  });
+
+  const upcoming = allDepartures.filter(d => d.diffMins >= 0).slice(0, count);
+  if (upcoming.length === 0 && allDepartures.length > 0) {
+    return allDepartures.slice(0, count).map(d => ({
+      ...d,
+      diffMins: d.totalMins + (24 * 60 - nowTotalMins),
+      tomorrow: true
+    }));
+  }
+  return upcoming;
+}
+
+// WIDOK 1: Rozkład przystanku (POSORTOWANY PO CZASIE DO ODJAZDU)
+function renderStopDeparturesBoard(stopId) {
+  const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
+  const board = document.getElementById("transit-stop-board");
+  if (!stopData || !board) return;
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+
+  document.getElementById("selected-line-badge").innerText = `${stopData.lines.length} LINIE`;
+  document.getElementById("selected-stop-name").innerText = `Najbliższe odjazdy z przystanku:`;
+  document.getElementById("selected-dest-name").innerText = stopData.stopName;
+  document.getElementById("transit-now-pill").innerText = `Teraz: ${timeStr}`;
+
+  board.innerHTML = "";
+  board.scrollTop = 0;
+
+  // Przygotowanie danych i SORTOWANIE ROSNĄCO PO CZASIE DO NAJBLIŻSZEGO ODJAZDU
+  const sortedLines = stopData.lines
+    .map(line => {
+      const upcoming = getUpcomingDeparturesForLine(line, now, 3);
+      const nextDiff = upcoming.length > 0 ? upcoming[0].diffMins : Number.MAX_SAFE_INTEGER;
+      return { line, upcoming, nextDiff };
+    })
+    .sort((a, b) => a.nextDiff - b.nextDiff);
+
+  sortedLines.forEach(({ line, upcoming }) => {
+    const next = upcoming[0];
+
+    let countdownLabel = "Brak kursów";
+    let isImminent = false;
+
+    if (next) {
+      if (next.diffMins === 0) {
+        countdownLabel = "ODJEŻDŻA TERAZ";
+        isImminent = true;
+      } else if (next.diffMins <= 60) {
+        countdownLabel = `za ${next.diffMins} min (${next.hourStr}:${next.minStr})`;
+        if (next.diffMins <= 5) isImminent = true;
+      } else {
+        countdownLabel = `${next.hourStr}:${next.minStr}${next.tomorrow ? " (jutro)" : ""}`;
+      }
+    }
+
+    const followingStr = upcoming.length > 1
+      ? "Kolejne: " + upcoming.slice(1).map(u => `${u.hourStr}:${u.minStr}`).join(", ")
+      : "Ostatni kurs dzisiaj";
+
+    const row = document.createElement("div");
+    row.className = "stop-departure-row";
+    row.setAttribute("data-aoi", `stop_board_line_${line.num}`);
+    row.innerHTML = `
+      <div class="stop-departure-left">
+        <div class="transit-line-num">${line.num}</div>
+        <div>
+          <div class="stop-dep-dest">Kierunek: ${line.dest}</div>
+          <div class="stop-dep-next-list">${followingStr}</div>
+        </div>
+      </div>
+      <div class="stop-dep-countdown ${isImminent ? "imminent" : ""}">
+        ${countdownLabel}
+      </div>
+    `;
+
+    row.addEventListener("click", () => {
+      selectedLineNum = line.num;
+      switchTransitViewMode("line");
+      renderTransitLinesList(stopId);
+    });
+
+    board.appendChild(row);
+  });
+}
+
+// WIDOK 2: Rozkład godzinowy wybranej linii (BEZ PRZESUWANIA CAŁEGO EKRANU)
 function renderTransitSchedule(stopId, lineNum) {
   const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
   if (!stopData) return;
   const lineData = stopData.lines.find(l => l.num === lineNum) || stopData.lines[0];
   if (!lineData) return;
 
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const timeStr = now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+
   document.getElementById("selected-line-badge").innerText = lineData.num;
   document.getElementById("selected-stop-name").innerText = `Przystanek: ${lineData.stop}`;
   document.getElementById("selected-dest-name").innerText = `Kierunek: ${lineData.dest}`;
+  document.getElementById("transit-now-pill").innerText = `Teraz: ${timeStr}`;
 
+  const wrapper = document.getElementById("transit-line-schedule-wrapper");
   const tbody = document.getElementById("transit-schedule-body");
   tbody.innerHTML = "";
+
+  let highlightedNextMinute = false;
+  let currentRowElement = null;
+
   lineData.schedule.forEach(row => {
+    const rowHour = parseInt(row.hour, 10);
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td class="td-hour">${row.hour}:00</td><td class="td-minutes">${row.mins}</td>`;
+
+    if (rowHour < currentHour) {
+      tr.classList.add("past-hour-row");
+    } else if (rowHour === currentHour) {
+      tr.classList.add("current-hour-row");
+      currentRowElement = tr;
+    }
+
+    const minsChips = row.mins.split(",").map(mStr => {
+      const mVal = parseInt(mStr.trim(), 10);
+      const formattedMin = String(mVal).padStart(2, "0");
+
+      if (rowHour < currentHour || (rowHour === currentHour && mVal < currentMinute)) {
+        return `<span class="min-chip past-min">${formattedMin}</span>`;
+      }
+      if (!highlightedNextMinute) {
+        highlightedNextMinute = true;
+        return `<span class="min-chip next-min" title="Najbliższy odjazd">${formattedMin}</span>`;
+      }
+      return `<span class="min-chip">${formattedMin}</span>`;
+    }).join("");
+
+    const nowBadge = (rowHour === currentHour) ? `<span class="now-tag">TERAZ</span>` : "";
+
+    tr.innerHTML = `
+      <td class="td-hour">${row.hour}:00 ${nowBadge}</td>
+      <td class="td-minutes">${minsChips}</td>
+    `;
     tbody.appendChild(tr);
   });
+
+  // Bezpieczne przewinięcie WYŁĄCZNIE wewnątrz tabeli (nie rusza głównego okna #kiosk-app!)
+  if (wrapper && currentRowElement) {
+    requestAnimationFrame(() => {
+      const targetOffset = currentRowElement.offsetTop - wrapper.clientHeight / 2 + currentRowElement.clientHeight / 2;
+      wrapper.scrollTop = Math.max(0, targetOffset);
+    });
+  }
 }
 
 function initNewsPromoModalEvents() {

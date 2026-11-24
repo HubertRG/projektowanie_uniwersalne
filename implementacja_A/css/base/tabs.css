@@ -1,0 +1,315 @@
+/* ========================================================
+   WISZĄCE KONTROLKI INTERFEJSU
+   ======================================================== */
+#top-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.floating-card {
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  pointer-events: auto;
+}
+
+.header-left {
+  padding: 10px 18px;
+}
+
+.header-left .mall-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: var(--primary-purple);
+}
+
+.header-left .mall-hours {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555555;
+  margin-top: 2px;
+}
+
+.top-nav {
+  flex: 1;
+  margin: 0 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.top-square-btn {
+  flex: 1;
+  min-width: 150px;
+  height: 86px;
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 6px 10px;
+  transition: all 0.15s ease-in-out;
+}
+
+.top-square-btn .icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  color: var(--primary-purple);
+}
+
+.top-square-btn .icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.top-square-btn .label {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.top-square-btn:active,
+.top-square-btn.active {
+  background: var(--primary-purple) !important;
+  color: #FFFFFF !important;
+}
+
+.top-square-btn:active .icon,
+.top-square-btn.active .icon {
+  color: #FFFFFF !important;
+}
+
+.header-right {
+  padding: 10px 18px;
+  text-align: right;
+  min-width: 210px;
+}
+
+.time-display {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--primary-purple);
+  font-variant-numeric: tabular-nums;
+}
+
+.date-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555555;
+}
+
+/* LEWE MENU BOCZNE */
+.side-panel-left {
+  position: absolute;
+  top: 130px;
+  left: 24px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.side-panel-left {
+  position: absolute;
+  top: 130px;
+  left: 24px;
+  width: 210px;
+  height: 620px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.side-btn {
+  width: 100%;
+  flex: 1;
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 10px;
+  color: var(--primary-purple);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+}
+
+.side-btn .side-icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-purple);
+}
+
+.side-btn .side-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.side-btn:active,
+.side-btn.active {
+  background: var(--primary-purple) !important;
+  color: #FFFFFF !important;
+}
+
+.side-btn:active .side-icon,
+.side-btn.active .side-icon {
+  color: #FFFFFF !important;
+}
+
+/* PRAWY PANEL SYMBOLI */
+.side-symbols {
+  position: absolute;
+  top: 130px;
+  right: 24px;
+  width: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.symbol-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.symbol-icon {
+  width: 50px;
+  height: 50px;
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-button);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  margin-bottom: 4px;
+  transition: transform 0.15s ease;
+}
+
+.symbol-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.symbol-card:active .symbol-icon {
+  transform: scale(0.92);
+}
+
+.symbol-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary-purple);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* DOLNE STEROWANIE PIĘTRAMI */
+#bottom-controls {
+  position: absolute;
+  bottom: 24px;
+  right: 40px; /* Odstęp od prawej krawędzi */
+  height: 64px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Odstęp między przyciskami pięter a "Gdzie jestem" */
+  pointer-events: none;
+  z-index: 100;
+}
+
+.floor-group {
+  display: flex;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+.floor-btn, .where-btn {
+  height: 54px;
+  background: var(--bg-button);
+  border: var(--border-width) solid var(--primary-purple);
+  border-radius: 8px;
+  color: var(--primary-purple);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  font-size: 16px;
+  font-weight: 800;
+  padding: 0 28px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+}
+
+.where-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.where-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.floor-btn:active,
+.floor-btn.active,
+.where-btn:active {
+  background: var(--primary-purple) !important;
+  color: #FFFFFF !important;
+}

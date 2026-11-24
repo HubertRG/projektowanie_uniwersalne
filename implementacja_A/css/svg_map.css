@@ -1,0 +1,130 @@
+/* ==== SVG MAPA SKLEPÓW (PIĘTRO 0) ==== */
+.stores-svg {
+  position: absolute;
+  inset: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  z-index: 10;
+  overflow: visible;
+}
+
+.shop-rect {
+  fill: var(--store-bg, #E8E8E8);
+  stroke: #bfbfbf;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+  filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
+}
+
+.shop-rect:hover {
+  fill: #F0E6FF;
+  stroke: var(--primary-purple, #2E0854);
+  stroke-width: 2;
+}
+
+.shop-rect.selected {
+  fill: var(--store-selected, #D32F2F);
+  stroke: #8B0000;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px rgba(211, 47, 47, 0.9));
+}
+
+.shop-label {
+  font-size: 13px;
+  font-weight: 800;
+  fill: #1a1a1a;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+.shop-rect.selected + .shop-label,
+.shop-rect.selected ~ .shop-label {
+  fill: #FFFFFF;
+}
+
+/* Małe sklepy – etykieta tylko po zaznaczeniu (opcjonalnie) */
+.small-shop + .shop-label {
+  display: none;
+}
+
+.stores-svg {
+  position: absolute;
+  inset: 12px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  z-index: 10;
+  overflow: visible;
+}
+
+.shop-polygon {
+  fill: #E8E8E8;
+  stroke: #999;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.shop-polygon:hover {
+  fill: #F0E6FF;
+  stroke: #2E0854;
+  stroke-width: 2;
+}
+
+.shop-polygon.selected {
+  fill: #D32F2F;
+  stroke: #8B0000;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(211, 47, 47, 0.9));
+}
+
+.empty-shop {
+  fill: #D0D0D0;
+  stroke: #B0B0B0;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.shop-label {
+  font-size: 9px;
+  font-weight: 800;
+  fill: #1a1a1a;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+.shop-label.selected {
+  fill: #FFFFFF;
+}
+
+.facility-bg {
+  fill: #FFFFFF;
+  stroke: #2E0854; /* Twój firmowy fiolet */
+  stroke-width: 4;
+  filter: url(#shadow);
+}
+
+.facility-bubble {
+  fill: #FFFFFF;
+  stroke: #2E0854;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+}
+
+.facility-icon-group {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.5); /* dostosuj: 0.3 = 30% rozmiaru, 0.5 = 50%, itd. */
+}
+
+.stores-svg {
+  position: absolute;
+  width: 180%;
+  height: 180%;
+  left: -40%;
+  top: -40%;
+  overflow: visible;
+  z-index: 10;
+}

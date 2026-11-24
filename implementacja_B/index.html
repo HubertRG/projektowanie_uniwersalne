@@ -431,27 +431,24 @@
           <div class="grid-4x3-container custom-scrollbar" id="services-grid" data-aoi="services_grid"></div>
         </div>
 
-        <!-- 5. Widok: REPERTUAR KINA -->
+        <!-- 5. Widok: REPERTUAR KINA (WERSJA DOSTĘPNA B - FILTR PO PIERWSZEJ LITERZE) -->
         <div id="view-ekran_kino" class="tab-view-content hidden full-screen-view">
           <div class="cinema-repertoire-wrapper custom-scrollbar" data-aoi="cinema_repertoire_wrapper">
             <div class="cinema-header-bar">
               <div>
                 <div class="cinema-brand">Cinema City — Poziom 2</div>
-                <div class="cinema-date-tag">Dzisiejsze seanse</div>
+                <div class="cinema-date-tag">Wybierz pierwszą literę tytułu, aby przefiltrować seanse</div>
               </div>
               <button class="kiosk-action-btn locate-cinema-btn" data-store-id="s2_cinema" data-aoi="btn_locate_cinema">
                 📍 Pokaż kino na mapie
               </button>
             </div>
-            <table class="cinema-table">
-              <thead>
-                <tr>
-                  <th class="th-movie-title">Tytuł filmu</th>
-                  <th class="th-movie-seances">Godziny seansów</th>
-                </tr>
-              </thead>
-              <tbody id="cinema-repertoire-body"></tbody>
-            </table>
+          
+            <!-- Pasek dużych przycisków dotykowych z pierwszymi literami tytułów -->
+            <div class="cinema-alpha-filter" id="cinema-alpha-filter" data-aoi="cinema_alpha_filter"></div>
+          
+            <!-- Lista kart filmowych -->
+            <div class="cinema-movies-list" id="cinema-repertoire-body" data-aoi="cinema_movies_list"></div>
           </div>
         </div>
 
@@ -488,32 +485,54 @@
           <div class="cards-scroll-container custom-scrollbar" id="promo-cards-container" data-aoi="promo_cards_scroll"></div>
         </div>
 
-        <!-- 9. Widok: KOMUNIKACJA -->
+        <!-- 9. Widok: KOMUNIKACJA (WERSJA DOSTĘPNA B - AKTUALNA GODZINA + ROZKŁAD DLA PRZYSTANKU) -->
         <div id="view-ekran_komunikacja" class="tab-view-content hidden full-screen-view">
           <div class="transit-container" data-aoi="transit_container">
+            <!-- Lewa kolumna: Przystanek oraz Linie -->
             <div class="transit-col-left">
-              <div class="transit-box lines-box">
-                <h3 class="transit-box-title">WYBIERZ LINIĘ AUTOBUSU</h3>
-                <div class="transit-lines-list custom-scrollbar" id="transit-lines-list" data-aoi="transit_lines_list"></div>
-              </div>
               <div class="transit-box stops-box">
-                <h3 class="transit-box-title">WYBIERZ PRZYSTANEK</h3>
+                <h3 class="transit-box-title">1. WYBIERZ PRZYSTANEK</h3>
                 <div class="transit-stops-list custom-scrollbar" id="transit-stops-list" data-aoi="transit_stops_list"></div>
               </div>
-            </div>
-
-            <div class="transit-col-right">
-              <div class="transit-selected-header" id="transit-selected-header" data-aoi="transit_selected_header">
-                <div class="transit-line-badge" id="selected-line-badge">004</div>
-                <div class="transit-selected-info">
-                  <div class="transit-sel-stop" id="selected-stop-name">Przystanek: Ogród Saski 01</div>
-                  <div class="transit-sel-dest" id="selected-dest-name">Kierunek: Elizówka</div>
-                </div>
+            
+              <div class="transit-box lines-box">
+                <h3 class="transit-box-title">2. LINIE NA TYM PRZYSTANKU</h3>
+                <div class="transit-lines-list custom-scrollbar" id="transit-lines-list" data-aoi="transit_lines_list"></div>
               </div>
-              <div class="transit-schedule-wrapper custom-scrollbar" data-aoi="transit_schedule_table">
+            </div>
+          
+            <!-- Prawa kolumna: Przełącznik trybu + inteligentny rozkład -->
+            <div class="transit-col-right">
+              <div class="transit-mode-bar" data-aoi="transit_mode_bar">
+                <button type="button" class="transit-mode-btn active" id="btn-mode-stop-departures" data-aoi="btn_transit_mode_stop">
+                  ⏱ Najbliższe odjazdy z przystanku
+                </button>
+                <button type="button" class="transit-mode-btn" id="btn-mode-line-schedule" data-aoi="btn_transit_mode_line">
+                  📋 Rozkład wybranej linii
+                </button>
+              </div>
+            
+              <!-- Nagłówek kontekstowy -->
+              <div class="transit-selected-header" id="transit-selected-header" data-aoi="transit_selected_header">
+                <div class="transit-line-badge" id="selected-line-badge">115</div>
+                <div class="transit-selected-info">
+                  <div class="transit-sel-stop" id="selected-stop-name">Przystanek: Galeria Handlowa 01</div>
+                  <div class="transit-sel-dest" id="selected-dest-name">Kierunek: Dworzec Główny PKP</div>
+                </div>
+                <div class="transit-live-clock-pill" id="transit-now-pill">Teraz: 13:18</div>
+              </div>
+            
+              <!-- Kontener 1: Najbliższe odjazdy wszystkich linii z danego przystanku -->
+              <div class="transit-stop-board custom-scrollbar" id="transit-stop-board" data-aoi="transit_stop_board"></div>
+            
+              <!-- Kontener 2: Godzinowy rozkład konkretnej linii z podświetleniem aktualnej godziny -->
+              <div class="transit-schedule-wrapper custom-scrollbar hidden" id="transit-line-schedule-wrapper" data-aoi="transit_schedule_table">
                 <table class="schedule-table">
                   <thead>
-                    <tr><th class="th-hour">Godzina</th><th class="th-minutes">Minuty odjazdu</th></tr>
+                    <tr>
+                      <th class="th-hour">Godzina</th>
+                      <th class="th-minutes">Minuty odjazdu (wyróżniono najbliższy kurs)</th>
+                    </tr>
                   </thead>
                   <tbody id="transit-schedule-body"></tbody>
                 </table>
