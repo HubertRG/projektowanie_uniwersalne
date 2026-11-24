@@ -170,41 +170,76 @@ button:focus-visible {
 }
 
 /* ========================================================
-   TRYB DLA OSOBY NA WÓZKU (OBNIŻENIE INTERFEJSU DO DOLNEJ STREFY)
+   TRYB DLA OSOBY NA WÓZKU — CAŁA APLIKACJA W DOLNEJ STREFIE
    ======================================================== */
+
+body:has(#kiosk-app.wheelchair-mode) {
+  background-color: #cfd5df;
+}
+
+#kiosk-app.wheelchair-mode {
+  height: 740px;                
+  margin-top: 340px;    
+  border-top: 4px solid var(--primary-purple);
+  transition: all 0.25s ease-out;
+}
+
 #kiosk-app.wheelchair-mode #top-header {
-  top: 400px;
-  height: 100px;
+  top: 0;
+  height: 112px;
+  padding: 8px 24px;
 }
-#kiosk-app.wheelchair-mode #map-progress-bar {
-  top: 332px;
+
+#kiosk-app.wheelchair-mode .top-square-btn {
+  height: 94px;
 }
+
 #kiosk-app.wheelchair-mode #side-nav-left {
-  top: 514px;
-  height: 455px;
+  top: 122px;
+  height: 510px;
   gap: 10px;
 }
+
+#kiosk-app.wheelchair-mode .side-btn {
+  height: auto;
+  flex: 1;
+}
+
 #kiosk-app.wheelchair-mode #side-symbols-right {
-  top: 514px;
+  top: 122px;
   gap: 6px;
 }
+
 #kiosk-app.wheelchair-mode .symbol-card {
-  padding: 4px;
+  padding: 4px 6px;
 }
+
 #kiosk-app.wheelchair-mode .symbol-icon {
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
 }
+
 #kiosk-app.wheelchair-mode .module-window {
-  top: 400px;
-  bottom: 92px;
+  top: 116px;
+  bottom: 0;
+  left: 280px;
+  right: 0;
 }
+
+#kiosk-app.wheelchair-mode #map-viewport {
+  top: 0;
+  height: 100%;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+#kiosk-app.wheelchair-mode #bottom-controls {
+  bottom: 16px;
+}
+
 #kiosk-app.wheelchair-mode .modal-backdrop {
   align-items: flex-end;
-  padding-bottom: 104px;
-}
-#kiosk-app.wheelchair-mode #map-viewport {
-  padding-bottom: 320px;
+  padding-bottom: 24px;
 }
 
 /* ========================================================

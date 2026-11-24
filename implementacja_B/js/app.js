@@ -193,7 +193,20 @@ function initAccessibilityBar() {
     kiosk.classList.toggle("wheelchair-mode", a11yState.wheelchair);
     btnWheelchair.classList.toggle("active", a11yState.wheelchair);
     btnWheelchair.setAttribute("aria-pressed", String(a11yState.wheelchair));
-    announce(a11yState.wheelchair ? "Włączono tryb dla osoby na wózku. Przyciski są teraz niżej." : "Wyłączono tryb dla osoby na wózku.");
+    if (a11yState.wheelchair) {
+      mapState.scale = 0.85;
+      mapState.panX = 0;
+      mapState.panY = 0;
+    } else {
+      mapState.scale = 1.15;
+      mapState.panX = 0;
+      mapState.panY = 0;
+    }
+    updateMapTransform(true);
+
+    announce(a11yState.wheelchair
+      ? "Włączono tryb dla osoby na wózku. Cały ekran aplikacji został obniżony."
+      : "Wyłączono tryb dla osoby na wózku.");
     loggerInstance.logEvent("A11Y_WHEELCHAIR", null, { enabled: a11yState.wheelchair });
   });
 
