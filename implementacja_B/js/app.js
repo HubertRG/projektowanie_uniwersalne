@@ -19,7 +19,7 @@ let routeShowingSecondFloor = false;
 // Skala mapy (powiększone budynki w widoku 2D)
 const DEFAULT_MAP_SCALE = 1.15;
 const MIN_MAP_SCALE = 0.95;
-const MAX_MAP_SCALE = 2.40;
+const MAX_MAP_SCALE = 2.4;
 const BASE_MAX_PAN_X = 420;
 const BASE_MAX_PAN_Y = 300;
 
@@ -32,7 +32,7 @@ let mapState = {
   startX: 0,
   startY: 0,
   initialPinchDist: 0,
-  initialPinchScale: DEFAULT_MAP_SCALE
+  initialPinchScale: DEFAULT_MAP_SCALE,
 };
 
 // Stan wyszukiwarki i modułów
@@ -50,7 +50,7 @@ let a11yState = {
   highContrast: false,
   fontLevel: 0, // 0 = 100%, 1 = 118%, 2 = 134%
   wheelchair: false,
-  voiceEnabled: false
+  voiceEnabled: false,
 };
 
 // Limit czasu bezczynności (WCAG 2.2.1)
@@ -65,11 +65,14 @@ let hasUserInteracted = false;
 let selectedParkingTariff = { hours: "Do 2 godzin", price: "4,00 zł" };
 
 document.addEventListener("DOMContentLoaded", () => {
-  updateKioskAspectRatio();
-  window.addEventListener("resize", updateKioskAspectRatio);
-
   loggerInstance = new EyeTrackerLogger();
-  loggerInstance.setFloor(1);
+  initResearcherDockControls();
+
+  updateKioskAspectRatio();
+  window.addEventListener("resize", () => {
+    updateKioskAspectRatio();
+    if (loggerInstance) loggerInstance.syncVisibleAois();
+  });
 
   initClock();
   initMapPanning();
@@ -88,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initParkingPayModal();
   initAccessibilityBar();
   initInactivityTimer();
-  initResearcherDock();
 
   // Inicjalizacja modułów zakładek
   initStoresDirectoryModule();
@@ -172,8 +174,11 @@ function initAccessibilityBar() {
     kiosk.classList.toggle("high-contrast", a11yState.highContrast);
     btnContrast.classList.toggle("active", a11yState.highContrast);
     btnContrast.setAttribute("aria-pressed", String(a11yState.highContrast));
-    announce(a11yState.highContrast ? "Włączono tryb wysokiego kontrastu." : "Wyłączono tryb wysokiego kontrastu.");
-    loggerInstance.logEvent("A11Y_CONTRAST", null, { enabled: a11yState.highContrast });
+    announce(
+      a11yState.highContrast
+        ? "Włączono tryb wysokiego kontrastu."
+        : "Wyłączono tryb wysokiego kontrastu.",
+    );
   });
 
   btnFont.addEventListener("click", () => {
@@ -185,7 +190,8 @@ function initAccessibilityBar() {
     fontLabel.innerText = labels[a11yState.fontLevel];
     btnFont.classList.toggle("active", a11yState.fontLevel > 0);
     announce(`Zmieniono rozmiar tekstu na ${labels[a11yState.fontLevel]}.`);
-    loggerInstance.logEvent("A11Y_FONT_SIZE", null, { level: a11yState.fontLevel });
+
+    if (loggerInstance) setTimeout(() => loggerInstance.syncVisibleAois(), 250);
   });
 
   btnWheelchair.addEventListener("click", () => {
@@ -204,24 +210,28 @@ function initAccessibilityBar() {
     }
     updateMapTransform(true);
 
-    announce(a11yState.wheelchair
-      ? "Włączono tryb dla osoby na wózku. Cały ekran aplikacji został obniżony."
-      : "Wyłączono tryb dla osoby na wózku.");
-    loggerInstance.logEvent("A11Y_WHEELCHAIR", null, { enabled: a11yState.wheelchair });
+    announce(
+      a11yState.wheelchair
+        ? "Włączono tryb dla osoby na wózku. Cały ekran aplikacji został obniżony."
+        : "Wyłączono tryb dla osoby na wózku.",
+    );
+
+    if (loggerInstance) setTimeout(() => loggerInstance.syncVisibleAois(), 320);
   });
 
   btnVoice.addEventListener("click", () => {
     a11yState.voiceEnabled = !a11yState.voiceEnabled;
     btnVoice.classList.toggle("active", a11yState.voiceEnabled);
     btnVoice.setAttribute("aria-pressed", String(a11yState.voiceEnabled));
-    btnVoice.querySelector("span:last-child").innerText = a11yState.voiceEnabled ? "Lektor: Wł." : "Lektor: Wył.";
+    btnVoice.querySelector("span:last-child").innerText = a11yState.voiceEnabled
+      ? "Lektor: Wł."
+      : "Lektor: Wył.";
     if (a11yState.voiceEnabled) {
       announce("Włączono komunikaty głosowe z napisami.");
     } else {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       document.getElementById("voice-caption-bar").classList.add("hidden");
     }
-    loggerInstance.logEvent("A11Y_VOICE", null, { enabled: a11yState.voiceEnabled });
   });
 }
 
@@ -242,7 +252,7 @@ function initInactivityTimer() {
     }
   };
 
-  ["pointerdown", "touchstart", "keydown", "wheel"].forEach(evt => {
+  ["pointerdown", "touchstart", "keydown", "wheel"].forEach((evt) => {
     window.addEventListener(evt, registerActivity, { passive: true });
   });
 
@@ -251,7 +261,7 @@ function initInactivityTimer() {
     idleSeconds = -60; // Dodatkowe +60 sekund
     modal.classList.add("hidden");
     announce("Przedłużono czas korzystania z infomatu o 60 sekund.");
-    loggerInstance.logEvent("TIMEOUT_EXTENDED", null, { addedSec: 60 });
+    if (loggerInstance) loggerInstance.syncVisibleAois();
   });
 
   btnReset.addEventListener("click", () => {
@@ -268,8 +278,17 @@ function initInactivityTimer() {
       if (!timeoutModalOpen) {
         timeoutModalOpen = true;
         modal.classList.remove("hidden");
-        announce("Czy nadal korzystasz z infomatu? Dotknij przycisk Przedłuż czas.");
-        loggerInstance.logEvent("TIMEOUT_WARNING_SHOWN", null, { remaining });
+        announce(
+          "Czy nadal korzystasz z infomatu? Dotknij przycisk Przedłuż czas.",
+        );
+        if (loggerInstance) {
+          const timeoutBox = modal.querySelector(".timeout-window");
+          loggerInstance.logError(
+            "LIMIT_CZASU",
+            "Czy nadal korzystasz z infomatu?",
+            timeoutBox,
+          );
+        }
       }
       countdownEl.innerText = remaining;
       fillEl.style.width = `${(remaining / WARNING_BEFORE_SEC) * 100}%`;
@@ -302,7 +321,6 @@ function resetKioskToStart() {
   if (currentActiveFloor !== 1) switchFloorTab(1);
   updateMapProgress(1);
   announce("Wrócono na ekran startowy.");
-  loggerInstance.logEvent("SESSION_RESET_TIMEOUT", null, {});
 }
 
 // ========================================================
@@ -312,7 +330,9 @@ function updateMapTransform(animate = true) {
   const stage = document.getElementById("map-stage");
   if (!stage) return;
 
-  stage.style.transition = animate ? "transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)" : "none";
+  stage.style.transition = animate
+    ? "transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)"
+    : "none";
 
   const clamped = clampPan(mapState.panX, mapState.panY, mapState.scale);
   mapState.panX = clamped.x;
@@ -327,14 +347,14 @@ function clampPan(x, y, scale) {
   const currentMaxY = BASE_MAX_PAN_Y * (scale / MIN_MAP_SCALE);
   return {
     x: Math.max(-currentMaxX, Math.min(currentMaxX, x)),
-    y: Math.max(-currentMaxY, Math.min(currentMaxY, y))
+    y: Math.max(-currentMaxY, Math.min(currentMaxY, y)),
   };
 }
 
 function getTouchDistance(touches) {
   return Math.hypot(
     touches[0].clientX - touches[1].clientX,
-    touches[0].clientY - touches[1].clientY
+    touches[0].clientY - touches[1].clientY,
   );
 }
 
@@ -344,7 +364,10 @@ function initMapZoomControls() {
 
   const applyZoomDelta = (delta) => {
     if (activeRouteStoreId) return;
-    mapState.scale = Math.max(MIN_MAP_SCALE, Math.min(MAX_MAP_SCALE, +(mapState.scale + delta).toFixed(2)));
+    mapState.scale = Math.max(
+      MIN_MAP_SCALE,
+      Math.min(MAX_MAP_SCALE, +(mapState.scale + delta).toFixed(2)),
+    );
     updateMapTransform(true);
     if (selectedStoreId) {
       const storeEl = document.getElementById(`store-${selectedStoreId}`);
@@ -362,7 +385,12 @@ function initMapPanning() {
 
   const startDragMouse = (e) => {
     if (activeRouteStoreId) return;
-    if (e.target.closest("button") || e.target.closest(".shop-polygon") || e.target.closest(".store-block")) return;
+    if (
+      e.target.closest("button") ||
+      e.target.closest(".shop-polygon") ||
+      e.target.closest(".store-block")
+    )
+      return;
     mapState.isDragging = true;
     mapState.startX = e.clientX - mapState.panX;
     mapState.startY = e.clientY - mapState.panY;
@@ -387,49 +415,74 @@ function initMapPanning() {
   window.addEventListener("mousemove", onDragMouse);
   window.addEventListener("mouseup", endDragMouse);
 
-  viewport.addEventListener("wheel", (e) => {
-    if (activeRouteStoreId) return;
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 0.12 : -0.12;
-    mapState.scale = Math.max(MIN_MAP_SCALE, Math.min(MAX_MAP_SCALE, mapState.scale + zoomFactor));
-    updateMapTransform(true);
-    hideActionBubble();
-  }, { passive: false });
-
-  viewport.addEventListener("touchstart", (e) => {
-    if (activeRouteStoreId) return;
-    if (e.touches.length === 2) {
-      mapState.isPinching = true;
-      mapState.isDragging = false;
-      mapState.initialPinchDist = getTouchDistance(e.touches);
-      mapState.initialPinchScale = mapState.scale;
-      hideActionBubble();
-    } else if (e.touches.length === 1) {
-      if (e.target.closest("button") || e.target.closest(".shop-polygon") || e.target.closest(".store-block")) return;
-      mapState.isDragging = true;
-      mapState.isPinching = false;
-      mapState.startX = e.touches[0].clientX - mapState.panX;
-      mapState.startY = e.touches[0].clientY - mapState.panY;
-    }
-  }, { passive: false });
-
-  window.addEventListener("touchmove", (e) => {
-    if (activeRouteStoreId) return;
-    if (mapState.isPinching && e.touches.length === 2) {
+  viewport.addEventListener(
+    "wheel",
+    (e) => {
+      if (activeRouteStoreId) return;
       e.preventDefault();
-      const currentDist = getTouchDistance(e.touches);
-      if (mapState.initialPinchDist > 0) {
-        const newScale = mapState.initialPinchScale * (currentDist / mapState.initialPinchDist);
-        mapState.scale = Math.max(MIN_MAP_SCALE, Math.min(MAX_MAP_SCALE, newScale));
-        updateMapTransform(false);
-      }
-    } else if (mapState.isDragging && e.touches.length === 1) {
-      mapState.panX = e.touches[0].clientX - mapState.startX;
-      mapState.panY = e.touches[0].clientY - mapState.startY;
-      updateMapTransform(false);
+      const zoomFactor = e.deltaY < 0 ? 0.12 : -0.12;
+      mapState.scale = Math.max(
+        MIN_MAP_SCALE,
+        Math.min(MAX_MAP_SCALE, mapState.scale + zoomFactor),
+      );
+      updateMapTransform(true);
       hideActionBubble();
-    }
-  }, { passive: false });
+    },
+    { passive: false },
+  );
+
+  viewport.addEventListener(
+    "touchstart",
+    (e) => {
+      if (activeRouteStoreId) return;
+      if (e.touches.length === 2) {
+        mapState.isPinching = true;
+        mapState.isDragging = false;
+        mapState.initialPinchDist = getTouchDistance(e.touches);
+        mapState.initialPinchScale = mapState.scale;
+        hideActionBubble();
+      } else if (e.touches.length === 1) {
+        if (
+          e.target.closest("button") ||
+          e.target.closest(".shop-polygon") ||
+          e.target.closest(".store-block")
+        )
+          return;
+        mapState.isDragging = true;
+        mapState.isPinching = false;
+        mapState.startX = e.touches[0].clientX - mapState.panX;
+        mapState.startY = e.touches[0].clientY - mapState.panY;
+      }
+    },
+    { passive: false },
+  );
+
+  window.addEventListener(
+    "touchmove",
+    (e) => {
+      if (activeRouteStoreId) return;
+      if (mapState.isPinching && e.touches.length === 2) {
+        e.preventDefault();
+        const currentDist = getTouchDistance(e.touches);
+        if (mapState.initialPinchDist > 0) {
+          const newScale =
+            mapState.initialPinchScale *
+            (currentDist / mapState.initialPinchDist);
+          mapState.scale = Math.max(
+            MIN_MAP_SCALE,
+            Math.min(MAX_MAP_SCALE, newScale),
+          );
+          updateMapTransform(false);
+        }
+      } else if (mapState.isDragging && e.touches.length === 1) {
+        mapState.panX = e.touches[0].clientX - mapState.startX;
+        mapState.panY = e.touches[0].clientY - mapState.startY;
+        updateMapTransform(false);
+        hideActionBubble();
+      }
+    },
+    { passive: false },
+  );
 
   const endTouch = (e) => {
     if (mapState.isPinching && e.touches.length < 2) {
@@ -456,7 +509,12 @@ function initClock() {
   function tick() {
     const now = new Date();
     timeEl.innerText = now.toLocaleTimeString("pl-PL", { hour12: false });
-    dateEl.innerText = now.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    dateEl.innerText = now.toLocaleDateString("pl-PL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   }
   tick();
   setInterval(tick, 1000);
@@ -495,15 +553,20 @@ function renderStoresForFloor(floor) {
 
   svgLayer.innerHTML = "";
   amenitiesContainer.innerHTML = "";
-  if (grid) { grid.innerHTML = ""; grid.style.display = "none"; }
+  if (grid) {
+    grid.innerHTML = "";
+    grid.style.display = "none";
+  }
 
   const pin = document.getElementById("you-are-here-pin");
-  if (pin) pin.style.display = (floor === 1) ? "flex" : "none";
+  if (pin) pin.style.display = floor === 1 ? "flex" : "none";
 
   let plan = null;
   if (floor === 0 && typeof FLOOR_PLAN_0 !== "undefined") plan = FLOOR_PLAN_0;
-  else if (floor === 1 && typeof FLOOR_PLAN_1 !== "undefined") plan = FLOOR_PLAN_1;
-  else if (floor === 2 && typeof FLOOR_PLAN_2 !== "undefined") plan = FLOOR_PLAN_2;
+  else if (floor === 1 && typeof FLOOR_PLAN_1 !== "undefined")
+    plan = FLOOR_PLAN_1;
+  else if (floor === 2 && typeof FLOOR_PLAN_2 !== "undefined")
+    plan = FLOOR_PLAN_2;
 
   if (plan) {
     const svg = document.getElementById("stores-svg");
@@ -528,7 +591,7 @@ function renderStoresForFloor(floor) {
 
       const onActivate = (e) => {
         e.stopPropagation();
-        const store = STORES_CATALOG.find(s => s.id === shop.storeId);
+        const store = STORES_CATALOG.find((s) => s.id === shop.storeId);
         if (store) handleStoreClick(store);
       };
       el.addEventListener("click", onActivate);
@@ -540,7 +603,7 @@ function renderStoresForFloor(floor) {
       if (shop.logo) {
         const bbox = el.getBBox();
         let logoSize = Math.min(bbox.width, bbox.height) * 0.65;
-        logoSize *= (shop.logoScale || 1);
+        logoSize *= shop.logoScale || 1;
 
         const offsetX = shop.logoOffset?.x || 0;
         const offsetY = shop.logoOffset?.y || 0;
@@ -551,7 +614,10 @@ function renderStoresForFloor(floor) {
         const centerX = baseX + logoSize / 2;
         const centerY = baseY + logoSize / 2;
 
-        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        const img = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "image",
+        );
         img.setAttribute("href", shop.logo);
         img.setAttribute("x", baseX);
         img.setAttribute("y", baseY);
@@ -561,22 +627,31 @@ function renderStoresForFloor(floor) {
         img.setAttribute("pointer-events", "none");
         img.setAttribute("preserveAspectRatio", "xMidYMid meet");
         if (rotation !== 0) {
-          img.setAttribute("transform", `rotate(${rotation}, ${centerX}, ${centerY})`);
+          img.setAttribute(
+            "transform",
+            `rotate(${rotation}, ${centerX}, ${centerY})`,
+          );
         }
         svgLayer.appendChild(img);
       }
     });
 
     if (plan.iconsSvg) {
-      const iconsWrapper = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      const iconsWrapper = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g",
+      );
       iconsWrapper.setAttribute("id", "floor-icons");
       iconsWrapper.innerHTML = plan.iconsSvg;
       svgLayer.appendChild(iconsWrapper);
 
-      iconsWrapper.querySelectorAll("g").forEach(group => {
+      iconsWrapper.querySelectorAll("g").forEach((group) => {
         const bbox = group.getBBox();
         const padding = 8;
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        const rect = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect",
+        );
         rect.setAttribute("x", bbox.x - padding);
         rect.setAttribute("y", bbox.y - padding);
         rect.setAttribute("width", bbox.width + padding * 2);
@@ -595,21 +670,29 @@ function renderStoresForFloor(floor) {
 // ========================================================
 function initLegendButtons() {
   const cards = document.querySelectorAll("#side-symbols-right .symbol-card");
-  cards.forEach(card => {
+  cards.forEach((card) => {
     card.addEventListener("click", () => {
       const facKey = card.getAttribute("data-facility");
       const wasActive = card.classList.contains("active");
 
-      cards.forEach(c => c.classList.remove("active"));
-      document.querySelectorAll(".facility-icon-group").forEach(g => g.classList.remove("highlighted"));
+      cards.forEach((c) => c.classList.remove("active"));
+      document
+        .querySelectorAll(".facility-icon-group")
+        .forEach((g) => g.classList.remove("highlighted"));
 
       if (!wasActive && facKey) {
         card.classList.add("active");
-        const matches = document.querySelectorAll(`.facility-icon-group[id^="${facKey}"]`);
-        matches.forEach(g => g.classList.add("highlighted"));
-        const label = card.querySelector(".symbol-label").innerText.replace(/\n/g, " ");
+        const matches = document.querySelectorAll(
+          `.facility-icon-group[id^="${facKey}"]`,
+        );
+        matches.forEach((g) => g.classList.add("highlighted"));
+        const label = card
+          .querySelector(".symbol-label")
+          .innerText.replace(/\n/g, " ");
         if (matches.length > 0) {
-          announce(`Podświetlono na mapie: ${label}, liczba punktów na tym piętrze: ${matches.length}.`);
+          announce(
+            `Podświetlono na mapie: ${label}, liczba punktów na tym piętrze: ${matches.length}.`,
+          );
         } else {
           announce(`Brak punktu ${label} na tym piętrze. Sprawdź inne piętro.`);
         }
@@ -643,7 +726,9 @@ function updateMapBackButton() {
 function updateModuleBreadcrumb(screenId, titleText, extra = "") {
   const bc = document.getElementById("module-breadcrumb");
   if (!bc) return;
-  const stepText = extra ? `Krok 2 z 2: Plan Galerii › ${titleText} › ${extra}` : `Krok 1 z 2: Plan Galerii › ${titleText}`;
+  const stepText = extra
+    ? `Krok 2 z 2: Plan Galerii › ${titleText} › ${extra}`
+    : `Krok 1 z 2: Plan Galerii › ${titleText}`;
   bc.innerText = stepText;
 }
 
@@ -659,6 +744,8 @@ function deselectStore(resetZoom = true) {
   hideActionBubble();
   updateMapProgress(1);
   updateMapBackButton();
+
+  if (loggerInstance) loggerInstance.syncVisibleAois();
 
   if (resetZoom) {
     mapState.scale = DEFAULT_MAP_SCALE;
@@ -692,10 +779,18 @@ function handleStoreClick(store) {
 
   showActionBubble(store, clickedBlock);
   setTimeout(() => {
-    if (selectedStoreId === store.id) positionBubbleOverStore(clickedBlock);
+    if (selectedStoreId === store.id) {
+      positionBubbleOverStore(clickedBlock);
+      if (loggerInstance) {
+        const routeBtn = document.getElementById("btn-show-route");
+        loggerInstance.registerTargetAoi(routeBtn, `pokaz_droge_${store.id}`);
+      }
+    }
   }, 300);
 
-  announce(`Wybrano lokal ${store.name}, poziom ${store.floor}, kategoria ${store.category}.`);
+  announce(
+    `Wybrano lokal ${store.name}, poziom ${store.floor}, kategoria ${store.category}.`,
+  );
 }
 
 function positionBubbleOverStore(storeElement) {
@@ -703,7 +798,9 @@ function positionBubbleOverStore(storeElement) {
   if (!bubble || !storeElement || bubble.classList.contains("hidden")) return;
 
   const rect = storeElement.getBoundingClientRect();
-  const kioskRect = document.getElementById("kiosk-app").getBoundingClientRect();
+  const kioskRect = document
+    .getElementById("kiosk-app")
+    .getBoundingClientRect();
   const scale = kioskRect.width / 1920;
 
   const storeScreenX = (rect.left + rect.width / 2 - kioskRect.left) / scale;
@@ -723,8 +820,12 @@ function showActionBubble(store, storeElement) {
   collapseBubbleDetails();
 
   document.getElementById("bubble-store-name").innerText = store.name;
-  document.getElementById("bubble-store-cat-floor").innerText = `Poziom ${store.floor} • ${store.category}`;
-  document.getElementById("bubble-store-logo").innerText = store.name.substring(0, 10);
+  document.getElementById("bubble-store-cat-floor").innerText =
+    `Poziom ${store.floor} • ${store.category}`;
+  document.getElementById("bubble-store-logo").innerText = store.name.substring(
+    0,
+    10,
+  );
   bubble.setAttribute("data-aoi", `store_actions_bubble_${store.id}`);
 
   bubble.classList.remove("hidden");
@@ -732,20 +833,22 @@ function showActionBubble(store, storeElement) {
 }
 
 function expandBubbleDetails(storeId) {
-  const store = STORES_CATALOG.find(s => s.id === storeId);
+  const store = STORES_CATALOG.find((s) => s.id === storeId);
   if (!store) return;
 
   document.getElementById("bubble-expanded-details").classList.remove("hidden");
-  document.getElementById("btn-show-modal").innerHTML = `<span aria-hidden="true">▲</span> Zwiń opis`;
+  document.getElementById("btn-show-modal").innerHTML =
+    `<span aria-hidden="true">▲</span> Zwiń opis`;
   announce(`Szczegóły sklepu ${store.name}. Czynne od 9 do 21.`);
-  loggerInstance.logEvent("EXPAND_STORE_DETAILS_BUBBLE", null, { storeId: store.id, storeName: store.name });
+  if (loggerInstance) loggerInstance.syncVisibleAois();
 }
 
 function collapseBubbleDetails() {
   const panel = document.getElementById("bubble-expanded-details");
   const infoBtn = document.getElementById("btn-show-modal");
   if (panel) panel.classList.add("hidden");
-  if (infoBtn) infoBtn.innerHTML = `<span aria-hidden="true">ℹ️</span> O sklepie`;
+  if (infoBtn)
+    infoBtn.innerHTML = `<span aria-hidden="true">ℹ️</span> O sklepie`;
 }
 
 function hideActionBubble() {
@@ -799,12 +902,14 @@ function initActionBubbleAndModal() {
 // PODSUMOWANIE TRASY (WCAG 3.3.4 + WYBÓR SCHODY / WINDA)
 // ========================================================
 function openRouteSummaryModal(storeId) {
-  const store = STORES_CATALOG.find(s => s.id === storeId);
+  const store = STORES_CATALOG.find((s) => s.id === storeId);
   if (!store) return;
 
   document.getElementById("summary-dest-name").innerText = store.name;
-  document.getElementById("summary-dest-floor").innerText = store.floor === 0 ? "Poziom 0 (Parter)" : `Poziom ${store.floor}`;
-  document.getElementById("summary-walk-time").innerText = store.floor === 1 ? "ok. 1–2 min" : "ok. 3–4 min (zmiana piętra)";
+  document.getElementById("summary-dest-floor").innerText =
+    store.floor === 0 ? "Poziom 0 (Parter)" : `Poziom ${store.floor}`;
+  document.getElementById("summary-walk-time").innerText =
+    store.floor === 1 ? "ok. 1–2 min" : "ok. 3–4 min (zmiana piętra)";
 
   const modeSelector = document.getElementById("route-mode-selector");
   if (store.floor !== 1) {
@@ -817,31 +922,53 @@ function openRouteSummaryModal(storeId) {
 
   document.getElementById("route-summary-modal").classList.remove("hidden");
   announce(`Podsumowanie trasy do ${store.name}. Potwierdź lub anuluj.`);
+  if (loggerInstance) {
+    loggerInstance.setScreen("ekran_podsumowanie_trasy");
+    const confirmBtn = document.getElementById("btn-confirm-route-summary");
+    loggerInstance.registerTargetAoi(confirmBtn, `potwierdz_trase_${storeId}`);
+  }
 }
 
 function setRouteMode(mode) {
   selectedRouteMode = mode;
-  document.getElementById("btn-mode-escalator").classList.toggle("active", mode === "escalator");
-  document.getElementById("btn-mode-elevator").classList.toggle("active", mode === "elevator");
+  document
+    .getElementById("btn-mode-escalator")
+    .classList.toggle("active", mode === "escalator");
+  document
+    .getElementById("btn-mode-elevator")
+    .classList.toggle("active", mode === "elevator");
 }
 
 function initRouteSummaryModal() {
   const modal = document.getElementById("route-summary-modal");
-  const close = () => modal.classList.add("hidden");
+  const close = () => {
+    modal.classList.add("hidden");
+    if (loggerInstance) loggerInstance.setScreen("ekran_plan");
+  };
 
-  document.getElementById("btn-close-route-summary").addEventListener("click", close);
-  document.getElementById("btn-cancel-route-summary").addEventListener("click", () => {
-    close();
-    announce("Anulowano wyznaczanie trasy.");
-  });
+  document
+    .getElementById("btn-close-route-summary")
+    .addEventListener("click", close);
+  document
+    .getElementById("btn-cancel-route-summary")
+    .addEventListener("click", () => {
+      close();
+      announce("Anulowano wyznaczanie trasy.");
+    });
 
-  document.getElementById("btn-mode-escalator").addEventListener("click", () => setRouteMode("escalator"));
-  document.getElementById("btn-mode-elevator").addEventListener("click", () => setRouteMode("elevator"));
+  document
+    .getElementById("btn-mode-escalator")
+    .addEventListener("click", () => setRouteMode("escalator"));
+  document
+    .getElementById("btn-mode-elevator")
+    .addEventListener("click", () => setRouteMode("elevator"));
 
-  document.getElementById("btn-confirm-route-summary").addEventListener("click", () => {
-    close();
-    if (selectedStoreId) executeRouteNavigation(selectedStoreId);
-  });
+  document
+    .getElementById("btn-confirm-route-summary")
+    .addEventListener("click", () => {
+      close();
+      if (selectedStoreId) executeRouteNavigation(selectedStoreId);
+    });
 }
 
 // ========================================================
@@ -865,9 +992,12 @@ function buildGrid(plan) {
   baseEl.setAttribute("fill", "black");
   tempSvg.appendChild(baseEl);
 
-  const allShapes = [...Object.values(plan.shops), ...Object.values(plan.emptyShops)];
+  const allShapes = [
+    ...Object.values(plan.shops),
+    ...Object.values(plan.emptyShops),
+  ];
   const elements = [];
-  allShapes.forEach(shape => {
+  allShapes.forEach((shape) => {
     const el = createSvgShape(shape);
     if (el) {
       el.setAttribute("fill", "black");
@@ -882,12 +1012,19 @@ function buildGrid(plan) {
       const x = col * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
       const y = row * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
       let inBase = false;
-      try { if (baseEl.isPointInFill(new DOMPoint(x, y))) inBase = true; } catch (e) {}
+      try {
+        if (baseEl.isPointInFill(new DOMPoint(x, y))) inBase = true;
+      } catch (e) {}
       let inBuilding = false;
       for (const el of elements) {
-        try { if (el.isPointInFill(new DOMPoint(x, y))) { inBuilding = true; break; } } catch (e) {}
+        try {
+          if (el.isPointInFill(new DOMPoint(x, y))) {
+            inBuilding = true;
+            break;
+          }
+        } catch (e) {}
       }
-      grid[row][col] = (inBase && !inBuilding) ? 1 : 0;
+      grid[row][col] = inBase && !inBuilding ? 1 : 0;
     }
   }
 
@@ -903,12 +1040,19 @@ function findPath(startX, startY, endX, endY, grid) {
   const endCol = Math.floor(endX / GRID_CELL_SIZE);
   const endRow = Math.floor(endY / GRID_CELL_SIZE);
 
-  if (startCol < 0 || startCol >= cols || startRow < 0 || startRow >= rows) return null;
+  if (startCol < 0 || startCol >= cols || startRow < 0 || startRow >= rows)
+    return null;
   if (endCol < 0 || endCol >= cols || endRow < 0 || endRow >= rows) return null;
   grid[endRow][endCol] = 1;
 
   const openSet = new Map();
-  openSet.set(`${startCol},${startRow}`, { col: startCol, row: startRow, g: 0, f: 0, parent: null });
+  openSet.set(`${startCol},${startRow}`, {
+    col: startCol,
+    row: startRow,
+    g: 0,
+    f: 0,
+    parent: null,
+  });
   const closedSet = new Set();
   const key = (c, r) => `${c},${r}`;
   const heuristic = (c, r) => Math.abs(c - endCol) + Math.abs(r - endRow);
@@ -917,7 +1061,10 @@ function findPath(startX, startY, endX, endY, grid) {
     let currentKey = null;
     let currentF = Infinity;
     for (const [k, node] of openSet) {
-      if (node.f < currentF) { currentF = node.f; currentKey = k; }
+      if (node.f < currentF) {
+        currentF = node.f;
+        currentKey = k;
+      }
     }
     const current = openSet.get(currentKey);
     openSet.delete(currentKey);
@@ -928,7 +1075,7 @@ function findPath(startX, startY, endX, endY, grid) {
       while (node) {
         path.unshift({
           x: node.col * GRID_CELL_SIZE + GRID_CELL_SIZE / 2,
-          y: node.row * GRID_CELL_SIZE + GRID_CELL_SIZE / 2
+          y: node.row * GRID_CELL_SIZE + GRID_CELL_SIZE / 2,
         });
         node = node.parent;
       }
@@ -937,8 +1084,14 @@ function findPath(startX, startY, endX, endY, grid) {
 
     closedSet.add(key(current.col, current.row));
     const neighbors = [
-      { dc: 0, dr: -1 }, { dc: 0, dr: 1 }, { dc: -1, dr: 0 }, { dc: 1, dr: 0 },
-      { dc: -1, dr: -1 }, { dc: 1, dr: -1 }, { dc: -1, dr: 1 }, { dc: 1, dr: 1 }
+      { dc: 0, dr: -1 },
+      { dc: 0, dr: 1 },
+      { dc: -1, dr: 0 },
+      { dc: 1, dr: 0 },
+      { dc: -1, dr: -1 },
+      { dc: 1, dr: -1 },
+      { dc: -1, dr: 1 },
+      { dc: 1, dr: 1 },
     ];
 
     for (const n of neighbors) {
@@ -948,13 +1101,17 @@ function findPath(startX, startY, endX, endY, grid) {
       if (closedSet.has(key(nc, nr))) continue;
 
       const cellCost = grid[nr][nc] === 0 ? 1000 : 1;
-      const cost = (n.dc !== 0 && n.dr !== 0) ? 1.414 : 1;
-      const g = current.g + (cost * cellCost);
+      const cost = n.dc !== 0 && n.dr !== 0 ? 1.414 : 1;
+      const g = current.g + cost * cellCost;
       const f = g + heuristic(nc, nr);
 
       const existing = openSet.get(key(nc, nr));
       if (existing) {
-        if (g < existing.g) { existing.g = g; existing.f = f; existing.parent = current; }
+        if (g < existing.g) {
+          existing.g = g;
+          existing.f = f;
+          existing.parent = current;
+        }
       } else {
         openSet.set(key(nc, nr), { col: nc, row: nr, g, f, parent: current });
       }
@@ -974,7 +1131,9 @@ function getCenterOf(selector) {
       const bbox = el.getBBox();
       if (bbox.width === 0 && bbox.height === 0) return null;
       return { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
-    } catch (e) { return null; }
+    } catch (e) {
+      return null;
+    }
   }
 
   const rect = el.getBoundingClientRect();
@@ -982,8 +1141,8 @@ function getCenterOf(selector) {
   const svg = document.getElementById("stores-svg");
   const svgRect = svg.getBoundingClientRect();
   return {
-    x: (rect.left + rect.width / 2 - svgRect.left) / svgRect.width * 842,
-    y: (rect.top + rect.height / 2 - svgRect.top) / svgRect.height * 595
+    x: ((rect.left + rect.width / 2 - svgRect.left) / svgRect.width) * 842,
+    y: ((rect.top + rect.height / 2 - svgRect.top) / svgRect.height) * 595,
   };
 }
 
@@ -992,9 +1151,12 @@ function drawSimplePath(x1, y1, x2, y2) {
   if (!pathSvg) return;
 
   let plan = null;
-  if (currentActiveFloor === 0 && typeof FLOOR_PLAN_0 !== "undefined") plan = FLOOR_PLAN_0;
-  else if (currentActiveFloor === 1 && typeof FLOOR_PLAN_1 !== "undefined") plan = FLOOR_PLAN_1;
-  else if (currentActiveFloor === 2 && typeof FLOOR_PLAN_2 !== "undefined") plan = FLOOR_PLAN_2;
+  if (currentActiveFloor === 0 && typeof FLOOR_PLAN_0 !== "undefined")
+    plan = FLOOR_PLAN_0;
+  else if (currentActiveFloor === 1 && typeof FLOOR_PLAN_1 !== "undefined")
+    plan = FLOOR_PLAN_1;
+  else if (currentActiveFloor === 2 && typeof FLOOR_PLAN_2 !== "undefined")
+    plan = FLOOR_PLAN_2;
 
   if (!plan) {
     pathSvg.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
@@ -1013,7 +1175,9 @@ function drawSimplePath(x1, y1, x2, y2) {
   }
 
   let d = `M ${x1} ${y1}`;
-  path.forEach(pt => { d += ` L ${pt.x} ${pt.y}`; });
+  path.forEach((pt) => {
+    d += ` L ${pt.x} ${pt.y}`;
+  });
   d += ` L ${x2} ${y2}`;
   pathSvg.setAttribute("d", d);
 }
@@ -1028,7 +1192,7 @@ function hideRouteBanner() {
 }
 
 function executeRouteNavigation(storeId) {
-  const store = STORES_CATALOG.find(s => s.id === storeId);
+  const store = STORES_CATALOG.find((s) => s.id === storeId);
   if (!store) return;
 
   hideActionBubble();
@@ -1040,9 +1204,16 @@ function executeRouteNavigation(storeId) {
   document.getElementById("route-dismiss-container").classList.remove("hidden");
   document.getElementById("route-blocker-overlay").classList.remove("hidden");
 
+  if (loggerInstance) {
+    const okBtn = document.getElementById("btn-route-ok");
+    loggerInstance.registerTargetAoi(okBtn, `zamknij_trase_${storeId}`);
+  }
+
   const switchBtn = document.getElementById("btn-route-switch-floor");
-  const connectorSelector = selectedRouteMode === "elevator" ? "#elevators" : "#escalator-1";
-  const connectorName = selectedRouteMode === "elevator" ? "windy" : "schodów ruchomych";
+  const connectorSelector =
+    selectedRouteMode === "elevator" ? "#elevators" : "#escalator-1";
+  const connectorName =
+    selectedRouteMode === "elevator" ? "windy" : "schodów ruchomych";
 
   if (store.floor === 1) {
     switchBtn.classList.add("hidden");
@@ -1051,8 +1222,16 @@ function executeRouteNavigation(storeId) {
       const storeEl = document.getElementById(`store-${storeId}`);
       if (storeEl) {
         const bbox = storeEl.getBBox();
-        const INFOMAT = getCenterOf("#you-are-here-pin") || { x: 421, y: 297.5 };
-        drawSimplePath(INFOMAT.x, INFOMAT.y, bbox.x + bbox.width / 2, bbox.y + bbox.height / 2);
+        const INFOMAT = getCenterOf("#you-are-here-pin") || {
+          x: 421,
+          y: 297.5,
+        };
+        drawSimplePath(
+          INFOMAT.x,
+          INFOMAT.y,
+          bbox.x + bbox.width / 2,
+          bbox.y + bbox.height / 2,
+        );
         const msg = `Trasa do: ${store.name} (Poziom 1)`;
         showRouteBanner(msg);
         announce(msg);
@@ -1066,7 +1245,12 @@ function executeRouteNavigation(storeId) {
   renderMultiFloorLeg(store, connectorSelector, connectorName, false);
 }
 
-function renderMultiFloorLeg(store, connectorSelector, connectorName, showTargetFloor) {
+function renderMultiFloorLeg(
+  store,
+  connectorSelector,
+  connectorName,
+  showTargetFloor,
+) {
   const switchBtn = document.getElementById("btn-route-switch-floor");
   routeShowingSecondFloor = showTargetFloor;
 
@@ -1088,7 +1272,12 @@ function renderMultiFloorLeg(store, connectorSelector, connectorName, showTarget
       const storeEl = document.getElementById(`store-${store.id}`);
       if (storeEl) {
         const bbox = storeEl.getBBox();
-        drawSimplePath(CONN.x, CONN.y, bbox.x + bbox.width / 2, bbox.y + bbox.height / 2);
+        drawSimplePath(
+          CONN.x,
+          CONN.y,
+          bbox.x + bbox.width / 2,
+          bbox.y + bbox.height / 2,
+        );
         const msg = `Część 2 z 2 (Poziom ${store.floor}): Idź od ${connectorName} do ${store.name}.`;
         showRouteBanner(msg);
         switchBtn.innerText = `← Pokaż część 1 (Poziom 1)`;
@@ -1099,14 +1288,23 @@ function renderMultiFloorLeg(store, connectorSelector, connectorName, showTarget
 }
 
 function initRouteDismissButton() {
-  document.getElementById("btn-route-switch-floor").addEventListener("click", () => {
-    if (!activeRouteStoreId) return;
-    const store = STORES_CATALOG.find(s => s.id === activeRouteStoreId);
-    if (!store) return;
-    const connectorSelector = selectedRouteMode === "elevator" ? "#elevators" : "#escalator-1";
-    const connectorName = selectedRouteMode === "elevator" ? "windy" : "schodów ruchomych";
-    renderMultiFloorLeg(store, connectorSelector, connectorName, !routeShowingSecondFloor);
-  });
+  document
+    .getElementById("btn-route-switch-floor")
+    .addEventListener("click", () => {
+      if (!activeRouteStoreId) return;
+      const store = STORES_CATALOG.find((s) => s.id === activeRouteStoreId);
+      if (!store) return;
+      const connectorSelector =
+        selectedRouteMode === "elevator" ? "#elevators" : "#escalator-1";
+      const connectorName =
+        selectedRouteMode === "elevator" ? "windy" : "schodów ruchomych";
+      renderMultiFloorLeg(
+        store,
+        connectorSelector,
+        connectorName,
+        !routeShowingSecondFloor,
+      );
+    });
 
   document.getElementById("btn-route-ok").addEventListener("click", () => {
     dismissActiveRoute();
@@ -1122,6 +1320,7 @@ function dismissActiveRoute() {
   activeRouteSecondFloor = null;
   document.getElementById("route-dismiss-container").classList.add("hidden");
   document.getElementById("route-blocker-overlay").classList.add("hidden");
+  if (loggerInstance) loggerInstance.syncVisibleAois();
   deselectStore(true);
 }
 
@@ -1134,20 +1333,25 @@ function switchFloorTab(floor) {
   if (!activeRouteStoreId) deselectStore(false);
 
   currentActiveFloor = floor;
-  document.querySelectorAll(".floor-btn").forEach(btn => {
-    btn.classList.toggle("active", parseInt(btn.getAttribute("data-floor"), 10) === floor);
+  document.querySelectorAll(".floor-btn").forEach((btn) => {
+    btn.classList.toggle(
+      "active",
+      parseInt(btn.getAttribute("data-floor"), 10) === floor,
+    );
   });
   loggerInstance.setFloor(floor);
   renderStoresForFloor(floor);
 }
 
 function initFloorNavigation() {
-  document.querySelectorAll(".floor-btn").forEach(btn => {
+  document.querySelectorAll(".floor-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (activeRouteStoreId) return;
       const floor = parseInt(btn.getAttribute("data-floor"), 10);
       switchFloorTab(floor);
-      announce(floor === 0 ? "Wybrano Poziom 0, Parter." : `Wybrano Poziom ${floor}.`);
+      announce(
+        floor === 0 ? "Wybrano Poziom 0, Parter." : `Wybrano Poziom ${floor}.`,
+      );
     });
   });
 
@@ -1169,10 +1373,12 @@ function initFloorNavigation() {
 // OKNA MODUŁOWE + PRZYCISK WSTECZ
 // ========================================================
 function initModuleScreenWindow() {
-  document.getElementById("btn-close-screen-window").addEventListener("click", () => {
-    navHistory = [];
-    returnToGalleryMap(true);
-  });
+  document
+    .getElementById("btn-close-screen-window")
+    .addEventListener("click", () => {
+      navHistory = [];
+      returnToGalleryMap(true);
+    });
 
   document.getElementById("btn-module-back").addEventListener("click", () => {
     const prev = navHistory.pop();
@@ -1185,7 +1391,11 @@ function initModuleScreenWindow() {
 }
 
 function openModuleScreen(screenId, titleText, pushHistory = true) {
-  if (pushHistory && currentModuleState && currentModuleState.screenId !== screenId) {
+  if (
+    pushHistory &&
+    currentModuleState &&
+    currentModuleState.screenId !== screenId
+  ) {
     navHistory.push({ type: "module", ...currentModuleState });
   } else if (pushHistory && !currentModuleState) {
     navHistory.push({ type: "map", floor: currentActiveFloor });
@@ -1198,7 +1408,9 @@ function openModuleScreen(screenId, titleText, pushHistory = true) {
   document.getElementById("module-screen-title").innerText = titleText;
   updateModuleBreadcrumb(screenId, titleText);
 
-  document.querySelectorAll(".tab-view-content").forEach(view => view.classList.add("hidden"));
+  document
+    .querySelectorAll(".tab-view-content")
+    .forEach((view) => view.classList.add("hidden"));
   const targetView = document.getElementById(`view-${screenId}`);
   if (targetView) targetView.classList.remove("hidden");
 
@@ -1211,8 +1423,12 @@ function returnToGalleryMap(announceBack = false) {
   document.getElementById("module-screen-window").classList.add("hidden");
   currentModuleState = null;
 
-  document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
+  document
+    .querySelectorAll(".top-square-btn")
+    .forEach((b) => b.classList.remove("active"));
+  document
+    .querySelectorAll(".side-btn")
+    .forEach((b) => b.classList.remove("active"));
   const planBtn = document.querySelector('.side-btn[data-screen="ekran_plan"]');
   if (planBtn) planBtn.classList.add("active");
 
@@ -1223,12 +1439,16 @@ function returnToGalleryMap(announceBack = false) {
 
 function initTopSquareNavigation() {
   const topButtons = document.querySelectorAll(".top-square-btn");
-  topButtons.forEach(btn => {
+  topButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const screenTarget = btn.getAttribute("data-screen");
-      const labelText = btn.querySelector(".label").innerText.replace(/\n/g, " ");
-      topButtons.forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".side-btn").forEach(b => b.classList.remove("active"));
+      const labelText = btn
+        .querySelector(".label")
+        .innerText.replace(/\n/g, " ");
+      topButtons.forEach((b) => b.classList.remove("active"));
+      document
+        .querySelectorAll(".side-btn")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       openModuleScreen(screenTarget, labelText, true);
     });
@@ -1237,12 +1457,14 @@ function initTopSquareNavigation() {
 
 function initSideNavigation() {
   const sideButtons = document.querySelectorAll(".side-btn");
-  sideButtons.forEach(btn => {
+  sideButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const screenTarget = btn.getAttribute("data-screen");
       const labelText = btn.querySelector(".side-title").innerText;
-      document.querySelectorAll(".top-square-btn").forEach(b => b.classList.remove("active"));
-      sideButtons.forEach(b => b.classList.remove("active"));
+      document
+        .querySelectorAll(".top-square-btn")
+        .forEach((b) => b.classList.remove("active"));
+      sideButtons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
 
       if (screenTarget === "ekran_plan") {
@@ -1256,7 +1478,7 @@ function initSideNavigation() {
 }
 
 function navigateToStoreOnMap(storeId) {
-  const store = STORES_CATALOG.find(s => s.id === storeId);
+  const store = STORES_CATALOG.find((s) => s.id === storeId);
   if (!store) return;
 
   if (currentModuleState) {
@@ -1268,8 +1490,6 @@ function navigateToStoreOnMap(storeId) {
   setTimeout(() => {
     handleStoreClick(store);
   }, 120);
-
-  loggerInstance.logEvent("NAVIGATE_STORE_FROM_TAB", null, { storeId, storeName: store.name });
 }
 
 // ========================================================
@@ -1289,54 +1509,88 @@ function initParkingPayModal() {
     const titles = {
       1: "Krok 1 z 3 • Wybierz czas postoju",
       2: "Krok 2 z 3 • Podsumowanie przed płatnością",
-      3: "Krok 3 z 3 • Potwierdzenie opłaty"
+      3: "Krok 3 z 3 • Potwierdzenie opłaty",
     };
     stepLabel.innerText = titles[num];
+    if (loggerInstance) {
+      loggerInstance.syncVisibleAois();
+      if (num === 2) {
+        const payBtn = document.getElementById("btn-parking-confirm-pay");
+        loggerInstance.registerTargetAoi(payBtn, "potwierdz_oplate_parking");
+      }
+    }
   };
 
   const closeModal = () => {
     modal.classList.add("hidden");
+    if (loggerInstance) {
+      loggerInstance.setScreen(
+        currentModuleState ? currentModuleState.screenId : "ekran_plan",
+      );
+    }
   };
 
-  document.getElementById("btn-open-parking-pay").addEventListener("click", () => {
-    showStep(1);
-    modal.classList.remove("hidden");
-    announce("Opłata za bilet parkingowy. Krok 1: wybierz czas postoju.");
-  });
+  document
+    .getElementById("btn-open-parking-pay")
+    .addEventListener("click", () => {
+      showStep(1);
+      modal.classList.remove("hidden");
+      if (loggerInstance) loggerInstance.setScreen("ekran_oplata_parking");
+      announce("Opłata za bilet parkingowy. Krok 1: wybierz czas postoju.");
+    });
 
-  document.querySelectorAll(".tariff-btn").forEach(btn => {
+  document.querySelectorAll(".tariff-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".tariff-btn").forEach(b => b.classList.remove("active"));
+      document
+        .querySelectorAll(".tariff-btn")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       selectedParkingTariff = {
         hours: btn.querySelector("strong").innerText,
-        price: btn.getAttribute("data-price")
+        price: btn.getAttribute("data-price"),
       };
     });
   });
 
-  document.getElementById("btn-parking-next-2").addEventListener("click", () => {
-    document.getElementById("pay-summary-hours").innerText = selectedParkingTariff.hours;
-    document.getElementById("pay-summary-price").innerText = selectedParkingTariff.price;
-    showStep(2);
-    announce(`Podsumowanie przed płatnością. Kwota ${selectedParkingTariff.price}. Potwierdź lub anuluj.`);
-  });
+  document
+    .getElementById("btn-parking-next-2")
+    .addEventListener("click", () => {
+      document.getElementById("pay-summary-hours").innerText =
+        selectedParkingTariff.hours;
+      document.getElementById("pay-summary-price").innerText =
+        selectedParkingTariff.price;
+      showStep(2);
+      announce(
+        `Podsumowanie przed płatnością. Kwota ${selectedParkingTariff.price}. Potwierdź lub anuluj.`,
+      );
+    });
 
-  document.getElementById("btn-parking-back-1").addEventListener("click", () => showStep(1));
-  document.getElementById("btn-parking-cancel-1").addEventListener("click", closeModal);
-  document.getElementById("btn-parking-cancel-2").addEventListener("click", () => {
-    closeModal();
-    announce("Anulowano płatność za parking.");
-  });
-  document.getElementById("btn-close-parking-pay").addEventListener("click", closeModal);
+  document
+    .getElementById("btn-parking-back-1")
+    .addEventListener("click", () => showStep(1));
+  document
+    .getElementById("btn-parking-cancel-1")
+    .addEventListener("click", closeModal);
+  document
+    .getElementById("btn-parking-cancel-2")
+    .addEventListener("click", () => {
+      closeModal();
+      announce("Anulowano płatność za parking.");
+    });
+  document
+    .getElementById("btn-close-parking-pay")
+    .addEventListener("click", closeModal);
 
-  document.getElementById("btn-parking-confirm-pay").addEventListener("click", () => {
-    showStep(3);
-    announce("Płatność zakończona pomyślnie. Masz 15 minut na wyjazd.");
-    loggerInstance.logEvent("PARKING_PAY_CONFIRMED", null, selectedParkingTariff);
-  });
+  document
+    .getElementById("btn-parking-confirm-pay")
+    .addEventListener("click", () => {
+      showStep(3);
+      announce("Płatność zakończona pomyślnie. Masz 15 minut na wyjazd.");
+    });
 
-  document.getElementById("btn-parking-done").addEventListener("click", closeModal);
+  document
+    .getElementById("btn-parking-done")
+    .addEventListener("click", closeModal);
 }
 
 // ========================================================
@@ -1346,7 +1600,9 @@ function initStoresDirectoryModule() {
   const categoriesContainer = document.getElementById("stores-categories-list");
   if (!categoriesContainer) return;
 
-  const allCategories = Array.from(new Set(STORES_CATALOG.map(s => s.category))).sort();
+  const allCategories = Array.from(
+    new Set(STORES_CATALOG.map((s) => s.category)),
+  ).sort();
   categoriesContainer.innerHTML = "";
 
   const createCatBtn = (label, count, value) => {
@@ -1355,7 +1611,9 @@ function initStoresDirectoryModule() {
     btn.setAttribute("data-aoi", `btn_cat_${value}`);
     btn.innerHTML = `<span>${label}</span><span class="cat-count-badge">${count}</span>`;
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".category-filter-btn").forEach(b => b.classList.remove("active"));
+      document
+        .querySelectorAll(".category-filter-btn")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       currentStoreCategoryFilter = value;
       renderFilteredStoresCatalog(value);
@@ -1364,9 +1622,11 @@ function initStoresDirectoryModule() {
     return btn;
   };
 
-  categoriesContainer.appendChild(createCatBtn("Wszystkie", STORES_CATALOG.length, "ALL"));
-  allCategories.forEach(cat => {
-    const count = STORES_CATALOG.filter(s => s.category === cat).length;
+  categoriesContainer.appendChild(
+    createCatBtn("Wszystkie", STORES_CATALOG.length, "ALL"),
+  );
+  allCategories.forEach((cat) => {
+    const count = STORES_CATALOG.filter((s) => s.category === cat).length;
     categoriesContainer.appendChild(createCatBtn(cat, count, cat));
   });
 
@@ -1378,10 +1638,16 @@ function renderFilteredStoresCatalog(category) {
   const labelEl = document.getElementById("stores-active-cat-label");
   catalogGrid.innerHTML = "";
 
-  const filtered = category === "ALL" ? STORES_CATALOG : STORES_CATALOG.filter(s => s.category === category);
-  labelEl.innerText = category === "ALL" ? `Wszystkie sklepy (${filtered.length})` : `${category} (${filtered.length})`;
+  const filtered =
+    category === "ALL"
+      ? STORES_CATALOG
+      : STORES_CATALOG.filter((s) => s.category === category);
+  labelEl.innerText =
+    category === "ALL"
+      ? `Wszystkie sklepy (${filtered.length})`
+      : `${category} (${filtered.length})`;
 
-  filtered.forEach(store => {
+  filtered.forEach((store) => {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "store-dir-card";
@@ -1401,21 +1667,31 @@ function initRestaurantsGridModule() {
   if (!container) return;
   container.innerHTML = "";
 
-  const gastroCategories = ["Kawiarnia", "Lody", "Gastronomia", "Gastro", "Kawiarnia/Lody", "Piekarnia", "Herbata"];
-  STORES_CATALOG.filter(s => gastroCategories.includes(s.category)).forEach(store => {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "grid-tile-card";
-    card.setAttribute("data-aoi", `card_gastro_${store.id}`);
-    card.innerHTML = `
+  const gastroCategories = [
+    "Kawiarnia",
+    "Lody",
+    "Gastronomia",
+    "Gastro",
+    "Kawiarnia/Lody",
+    "Piekarnia",
+    "Herbata",
+  ];
+  STORES_CATALOG.filter((s) => gastroCategories.includes(s.category)).forEach(
+    (store) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "grid-tile-card";
+      card.setAttribute("data-aoi", `card_gastro_${store.id}`);
+      card.innerHTML = `
       <div class="grid-tile-logo-box">${store.name.substring(0, 12)}</div>
       <div class="grid-tile-name">${store.name}</div>
       <div class="grid-tile-cat">${store.category}</div>
       <div class="grid-tile-floor">Poziom ${store.floor}</div>
     `;
-    card.addEventListener("click", () => navigateToStoreOnMap(store.id));
-    container.appendChild(card);
-  });
+      card.addEventListener("click", () => navigateToStoreOnMap(store.id));
+      container.appendChild(card);
+    },
+  );
 }
 
 function initServicesGridModule() {
@@ -1423,27 +1699,46 @@ function initServicesGridModule() {
   if (!container) return;
   container.innerHTML = "";
 
-  const serviceCategories = ["Usługi", "Finanse", "Bankowość", "Telekomunikacja", "GSM", "Optyk", "Zdrowie", "Podróże", "Upominki", "Kwiaty"];
-  STORES_CATALOG.filter(s => serviceCategories.includes(s.category)).forEach(store => {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "grid-tile-card";
-    card.setAttribute("data-aoi", `card_service_${store.id}`);
-    card.innerHTML = `
+  const serviceCategories = [
+    "Usługi",
+    "Finanse",
+    "Bankowość",
+    "Telekomunikacja",
+    "GSM",
+    "Optyk",
+    "Zdrowie",
+    "Podróże",
+    "Upominki",
+    "Kwiaty",
+  ];
+  STORES_CATALOG.filter((s) => serviceCategories.includes(s.category)).forEach(
+    (store) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "grid-tile-card";
+      card.setAttribute("data-aoi", `card_service_${store.id}`);
+      card.innerHTML = `
       <div class="grid-tile-logo-box">${store.name.substring(0, 12)}</div>
       <div class="grid-tile-name">${store.name}</div>
       <div class="grid-tile-cat">${store.category}</div>
       <div class="grid-tile-floor">Poziom ${store.floor}</div>
     `;
-    card.addEventListener("click", () => navigateToStoreOnMap(store.id));
-    container.appendChild(card);
-  });
+      card.addEventListener("click", () => navigateToStoreOnMap(store.id));
+      container.appendChild(card);
+    },
+  );
 
   const locateFitnessBtn = document.querySelector(".locate-store-btn");
-  if (locateFitnessBtn) locateFitnessBtn.addEventListener("click", () => navigateToStoreOnMap("s2_cityfit"));
+  if (locateFitnessBtn)
+    locateFitnessBtn.addEventListener("click", () =>
+      navigateToStoreOnMap("s2_cityfit"),
+    );
 
   const locateCinemaBtn = document.querySelector(".locate-cinema-btn");
-  if (locateCinemaBtn) locateCinemaBtn.addEventListener("click", () => navigateToStoreOnMap("s2_cinema"));
+  if (locateCinemaBtn)
+    locateCinemaBtn.addEventListener("click", () =>
+      navigateToStoreOnMap("s2_cinema"),
+    );
 }
 
 let selectedCinemaLetter = "ALL";
@@ -1454,7 +1749,9 @@ function initCinemaRepertoireModule() {
 
   // Wyodrębnij tylko te pierwsze litery, dla których istnieją filmy w repertuarze
   const letters = Array.from(
-    new Set(CINEMA_REPERTOIRE_DATA.map(m => m.title.trim().charAt(0).toUpperCase()))
+    new Set(
+      CINEMA_REPERTOIRE_DATA.map((m) => m.title.trim().charAt(0).toUpperCase()),
+    ),
   ).sort((a, b) => a.localeCompare(b, "pl"));
 
   filterBar.innerHTML = "";
@@ -1471,7 +1768,7 @@ function initCinemaRepertoireModule() {
   });
   filterBar.appendChild(allBtn);
 
-  letters.forEach(letter => {
+  letters.forEach((letter) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "alpha-filter-btn";
@@ -1489,7 +1786,9 @@ function initCinemaRepertoireModule() {
 }
 
 function setActiveCinemaLetterBtn(activeBtn) {
-  document.querySelectorAll(".alpha-filter-btn").forEach(b => b.classList.remove("active"));
+  document
+    .querySelectorAll(".alpha-filter-btn")
+    .forEach((b) => b.classList.remove("active"));
   activeBtn.classList.add("active");
 }
 
@@ -1501,28 +1800,36 @@ function renderCinemaMovies(letterFilter) {
   const now = new Date();
   const currentTotalMins = now.getHours() * 60 + now.getMinutes();
 
-  const filtered = letterFilter === "ALL"
-    ? CINEMA_REPERTOIRE_DATA
-    : CINEMA_REPERTOIRE_DATA.filter(m => m.title.trim().charAt(0).toUpperCase() === letterFilter);
+  const filtered =
+    letterFilter === "ALL"
+      ? CINEMA_REPERTOIRE_DATA
+      : CINEMA_REPERTOIRE_DATA.filter(
+          (m) => m.title.trim().charAt(0).toUpperCase() === letterFilter,
+        );
 
-  filtered.forEach(movie => {
+  filtered.forEach((movie) => {
     const card = document.createElement("div");
     card.className = "cinema-movie-card";
-    card.setAttribute("data-aoi", `cinema_movie_${movie.title.replace(/\s+/g, "_")}`);
+    card.setAttribute(
+      "data-aoi",
+      `cinema_movie_${movie.title.replace(/\s+/g, "_")}`,
+    );
 
     let foundNext = false;
-    const hoursHtml = movie.hours.map(h => {
-      const [hh, mm] = h.split(":").map(Number);
-      const seanceMins = hh * 60 + mm;
-      if (seanceMins < currentTotalMins) {
-        return `<span class="seance-chip past">${h}</span>`;
-      }
-      if (!foundNext) {
-        foundNext = true;
-        return `<span class="seance-chip next-up" title="Najbliższy seans">${h}</span>`;
-      }
-      return `<span class="seance-chip">${h}</span>`;
-    }).join("");
+    const hoursHtml = movie.hours
+      .map((h) => {
+        const [hh, mm] = h.split(":").map(Number);
+        const seanceMins = hh * 60 + mm;
+        if (seanceMins < currentTotalMins) {
+          return `<span class="seance-chip past">${h}</span>`;
+        }
+        if (!foundNext) {
+          foundNext = true;
+          return `<span class="seance-chip next-up" title="Najbliższy seans">${h}</span>`;
+        }
+        return `<span class="seance-chip">${h}</span>`;
+      })
+      .join("");
 
     const dubbingHtml = movie.dubbing
       ? `<span class="dubbing-badge">DUBBING</span>`
@@ -1556,15 +1863,15 @@ function initSearchModule() {
     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
     ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ł"],
     ["Z", "X", "C", "V", "B", "N", "M", "Ą", "Ę", "Ó"],
-    ["Ś", "Ć", "Ż", "Ź", "Ń", "SPACJA", "COFNIJ"]
+    ["Ś", "Ć", "Ż", "Ź", "Ń", "SPACJA", "COFNIJ"],
   ];
 
   keyboardWrapper.innerHTML = "";
-  keyboardLayout.forEach(rowKeys => {
+  keyboardLayout.forEach((rowKeys) => {
     const rowEl = document.createElement("div");
     rowEl.className = "keyboard-row";
 
-    rowKeys.forEach(key => {
+    rowKeys.forEach((key) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "key-btn";
@@ -1615,18 +1922,35 @@ function updateSearchResults(query) {
   resultsContainer.innerHTML = "";
 
   const clean = query.trim().toLowerCase();
-  const matched = clean === ""
-    ? STORES_CATALOG
-    : STORES_CATALOG.filter(s => s.name.toLowerCase().includes(clean) || s.category.toLowerCase().includes(clean));
+  const matched =
+    clean === ""
+      ? STORES_CATALOG
+      : STORES_CATALOG.filter(
+          (s) =>
+            s.name.toLowerCase().includes(clean) ||
+            s.category.toLowerCase().includes(clean),
+        );
 
   countBadge.innerText = `${matched.length} lokali`;
 
   if (matched.length === 0) {
     resultsContainer.innerHTML = `<div style="text-align:center;padding:24px;font-weight:700;">Nie znaleziono lokalu dla „${query}”. Spróbuj wpisać inną nazwę.</div>`;
+    if (loggerInstance) {
+      const errEl = document.getElementById("search-empty-error");
+      loggerInstance.logError(
+        "BRAK_WYNIKOW",
+        `Nie znaleziono lokalu dla: ${query}`,
+        errEl,
+      );
+    }
     return;
   }
 
-  matched.forEach(store => {
+  if (loggerInstance) {
+    loggerInstance.syncVisibleAois();
+  }
+
+  matched.forEach((store) => {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "search-result-item";
@@ -1649,7 +1973,7 @@ function initNewsModule() {
   if (!container) return;
   container.innerHTML = "";
 
-  NEWS_DATA.forEach(item => {
+  NEWS_DATA.forEach((item) => {
     const card = document.createElement("div");
     card.className = "feed-card";
     card.innerHTML = `
@@ -1670,7 +1994,7 @@ function initNewsModule() {
         title: item.title,
         badge: item.category,
         bgGradient: item.bgGradient,
-        fullText: item.fullText
+        fullText: item.fullText,
       });
     });
     container.appendChild(card);
@@ -1682,7 +2006,7 @@ function initPromoModule() {
   if (!container) return;
   container.innerHTML = "";
 
-  PROMO_DATA.forEach(item => {
+  PROMO_DATA.forEach((item) => {
     const card = document.createElement("div");
     card.className = "feed-card";
     card.innerHTML = `
@@ -1704,7 +2028,7 @@ function initPromoModule() {
         title: `${item.store} — ${item.title}`,
         badge: item.category,
         bgGradient: item.bgGradient,
-        fullText: item.fullText
+        fullText: item.fullText,
       });
     });
     container.appendChild(card);
@@ -1750,6 +2074,9 @@ function switchTransitViewMode(mode) {
     lineWrapper.classList.remove("hidden");
     renderTransitSchedule(selectedStopId, selectedLineNum);
   }
+  if (loggerInstance) {
+    loggerInstance.syncVisibleAois();
+  }
 }
 
 function renderTransitStopsList() {
@@ -1757,7 +2084,7 @@ function renderTransitStopsList() {
   if (!container) return;
   container.innerHTML = "";
 
-  TRANSIT_DATA.forEach(stop => {
+  TRANSIT_DATA.forEach((stop) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `transit-stop-btn ${stop.stopId === selectedStopId ? "active" : ""}`;
@@ -1782,14 +2109,14 @@ function renderTransitLinesList(stopId) {
   if (!container) return;
   container.innerHTML = "";
 
-  const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
+  const stopData = TRANSIT_DATA.find((s) => s.stopId === stopId);
   if (!stopData) return;
 
-  stopData.lines.forEach(line => {
+  stopData.lines.forEach((line) => {
     const card = document.createElement("button");
     card.type = "button";
     // Podświetlenie aktywnej linii tylko wtedy, gdy oglądamy rozkład linii
-    const isActive = (transitViewMode === "line" && line.num === selectedLineNum);
+    const isActive = transitViewMode === "line" && line.num === selectedLineNum;
     card.className = `transit-line-card ${isActive ? "active" : ""}`;
     card.setAttribute("data-aoi", `card_transit_line_${line.num}`);
 
@@ -1816,26 +2143,26 @@ function getUpcomingDeparturesForLine(lineData, nowDate, count = 3) {
   const nowTotalMins = nowDate.getHours() * 60 + nowDate.getMinutes();
   const allDepartures = [];
 
-  lineData.schedule.forEach(row => {
+  lineData.schedule.forEach((row) => {
     const h = parseInt(row.hour, 10);
-    const minsArray = row.mins.split(",").map(m => parseInt(m.trim(), 10));
-    minsArray.forEach(m => {
+    const minsArray = row.mins.split(",").map((m) => parseInt(m.trim(), 10));
+    minsArray.forEach((m) => {
       const total = h * 60 + m;
       allDepartures.push({
         hourStr: row.hour,
         minStr: String(m).padStart(2, "0"),
         totalMins: total,
-        diffMins: total - nowTotalMins
+        diffMins: total - nowTotalMins,
       });
     });
   });
 
-  const upcoming = allDepartures.filter(d => d.diffMins >= 0).slice(0, count);
+  const upcoming = allDepartures.filter((d) => d.diffMins >= 0).slice(0, count);
   if (upcoming.length === 0 && allDepartures.length > 0) {
-    return allDepartures.slice(0, count).map(d => ({
+    return allDepartures.slice(0, count).map((d) => ({
       ...d,
       diffMins: d.totalMins + (24 * 60 - nowTotalMins),
-      tomorrow: true
+      tomorrow: true,
     }));
   }
   return upcoming;
@@ -1843,15 +2170,20 @@ function getUpcomingDeparturesForLine(lineData, nowDate, count = 3) {
 
 // WIDOK 1: Rozkład przystanku (POSORTOWANY PO CZASIE DO ODJAZDU)
 function renderStopDeparturesBoard(stopId) {
-  const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
+  const stopData = TRANSIT_DATA.find((s) => s.stopId === stopId);
   const board = document.getElementById("transit-stop-board");
   if (!stopData || !board) return;
 
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+  const timeStr = now.toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  document.getElementById("selected-line-badge").innerText = `${stopData.lines.length} LINIE`;
-  document.getElementById("selected-stop-name").innerText = `Najbliższe odjazdy z przystanku:`;
+  document.getElementById("selected-line-badge").innerText =
+    `${stopData.lines.length} LINIE`;
+  document.getElementById("selected-stop-name").innerText =
+    `Najbliższe odjazdy z przystanku:`;
   document.getElementById("selected-dest-name").innerText = stopData.stopName;
   document.getElementById("transit-now-pill").innerText = `Teraz: ${timeStr}`;
 
@@ -1860,9 +2192,10 @@ function renderStopDeparturesBoard(stopId) {
 
   // Przygotowanie danych i SORTOWANIE ROSNĄCO PO CZASIE DO NAJBLIŻSZEGO ODJAZDU
   const sortedLines = stopData.lines
-    .map(line => {
+    .map((line) => {
       const upcoming = getUpcomingDeparturesForLine(line, now, 3);
-      const nextDiff = upcoming.length > 0 ? upcoming[0].diffMins : Number.MAX_SAFE_INTEGER;
+      const nextDiff =
+        upcoming.length > 0 ? upcoming[0].diffMins : Number.MAX_SAFE_INTEGER;
       return { line, upcoming, nextDiff };
     })
     .sort((a, b) => a.nextDiff - b.nextDiff);
@@ -1885,9 +2218,14 @@ function renderStopDeparturesBoard(stopId) {
       }
     }
 
-    const followingStr = upcoming.length > 1
-      ? "Kolejne: " + upcoming.slice(1).map(u => `${u.hourStr}:${u.minStr}`).join(", ")
-      : "Ostatni kurs dzisiaj";
+    const followingStr =
+      upcoming.length > 1
+        ? "Kolejne: " +
+          upcoming
+            .slice(1)
+            .map((u) => `${u.hourStr}:${u.minStr}`)
+            .join(", ")
+        : "Ostatni kurs dzisiaj";
 
     const row = document.createElement("div");
     row.className = "stop-departure-row";
@@ -1917,19 +2255,25 @@ function renderStopDeparturesBoard(stopId) {
 
 // WIDOK 2: Rozkład godzinowy wybranej linii (BEZ PRZESUWANIA CAŁEGO EKRANU)
 function renderTransitSchedule(stopId, lineNum) {
-  const stopData = TRANSIT_DATA.find(s => s.stopId === stopId);
+  const stopData = TRANSIT_DATA.find((s) => s.stopId === stopId);
   if (!stopData) return;
-  const lineData = stopData.lines.find(l => l.num === lineNum) || stopData.lines[0];
+  const lineData =
+    stopData.lines.find((l) => l.num === lineNum) || stopData.lines[0];
   if (!lineData) return;
 
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
-  const timeStr = now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+  const timeStr = now.toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   document.getElementById("selected-line-badge").innerText = lineData.num;
-  document.getElementById("selected-stop-name").innerText = `Przystanek: ${lineData.stop}`;
-  document.getElementById("selected-dest-name").innerText = `Kierunek: ${lineData.dest}`;
+  document.getElementById("selected-stop-name").innerText =
+    `Przystanek: ${lineData.stop}`;
+  document.getElementById("selected-dest-name").innerText =
+    `Kierunek: ${lineData.dest}`;
   document.getElementById("transit-now-pill").innerText = `Teraz: ${timeStr}`;
 
   const wrapper = document.getElementById("transit-line-schedule-wrapper");
@@ -1939,7 +2283,7 @@ function renderTransitSchedule(stopId, lineNum) {
   let highlightedNextMinute = false;
   let currentRowElement = null;
 
-  lineData.schedule.forEach(row => {
+  lineData.schedule.forEach((row) => {
     const rowHour = parseInt(row.hour, 10);
     const tr = document.createElement("tr");
 
@@ -1950,21 +2294,28 @@ function renderTransitSchedule(stopId, lineNum) {
       currentRowElement = tr;
     }
 
-    const minsChips = row.mins.split(",").map(mStr => {
-      const mVal = parseInt(mStr.trim(), 10);
-      const formattedMin = String(mVal).padStart(2, "0");
+    const minsChips = row.mins
+      .split(",")
+      .map((mStr) => {
+        const mVal = parseInt(mStr.trim(), 10);
+        const formattedMin = String(mVal).padStart(2, "0");
 
-      if (rowHour < currentHour || (rowHour === currentHour && mVal < currentMinute)) {
-        return `<span class="min-chip past-min">${formattedMin}</span>`;
-      }
-      if (!highlightedNextMinute) {
-        highlightedNextMinute = true;
-        return `<span class="min-chip next-min" title="Najbliższy odjazd">${formattedMin}</span>`;
-      }
-      return `<span class="min-chip">${formattedMin}</span>`;
-    }).join("");
+        if (
+          rowHour < currentHour ||
+          (rowHour === currentHour && mVal < currentMinute)
+        ) {
+          return `<span class="min-chip past-min">${formattedMin}</span>`;
+        }
+        if (!highlightedNextMinute) {
+          highlightedNextMinute = true;
+          return `<span class="min-chip next-min" title="Najbliższy odjazd">${formattedMin}</span>`;
+        }
+        return `<span class="min-chip">${formattedMin}</span>`;
+      })
+      .join("");
 
-    const nowBadge = (rowHour === currentHour) ? `<span class="now-tag">TERAZ</span>` : "";
+    const nowBadge =
+      rowHour === currentHour ? `<span class="now-tag">TERAZ</span>` : "";
 
     tr.innerHTML = `
       <td class="td-hour">${row.hour}:00 ${nowBadge}</td>
@@ -1976,7 +2327,10 @@ function renderTransitSchedule(stopId, lineNum) {
   // Bezpieczne przewinięcie WYŁĄCZNIE wewnątrz tabeli (nie rusza głównego okna #kiosk-app!)
   if (wrapper && currentRowElement) {
     requestAnimationFrame(() => {
-      const targetOffset = currentRowElement.offsetTop - wrapper.clientHeight / 2 + currentRowElement.clientHeight / 2;
+      const targetOffset =
+        currentRowElement.offsetTop -
+        wrapper.clientHeight / 2 +
+        currentRowElement.clientHeight / 2;
       wrapper.scrollTop = Math.max(0, targetOffset);
     });
   }
@@ -1984,9 +2338,19 @@ function renderTransitSchedule(stopId, lineNum) {
 
 function initNewsPromoModalEvents() {
   const modal = document.getElementById("news-promo-modal");
-  const close = () => modal.classList.add("hidden");
-  document.getElementById("btn-close-news-modal").addEventListener("click", close);
-  document.getElementById("btn-close-news-modal-bottom").addEventListener("click", close);
+  const close = () => {
+    modal.classList.add("hidden");
+
+    if (loggerInstance) {
+      loggerInstance.setScreen(currentActiveModuleScreen || "ekran_plan");
+    }
+  };
+  document
+    .getElementById("btn-close-news-modal")
+    .addEventListener("click", close);
+  document
+    .getElementById("btn-close-news-modal-bottom")
+    .addEventListener("click", close);
 }
 
 function openNewsPromoModal(data) {
@@ -1997,14 +2361,33 @@ function openNewsPromoModal(data) {
   document.getElementById("news-modal-img").style.background = data.bgGradient;
   document.getElementById("news-modal-text").innerText = data.fullText;
   modal.classList.remove("hidden");
-  loggerInstance.logEvent("MODAL_OPEN_NEWS_PROMO", null, { title: data.title });
+  if (loggerInstance) {
+    loggerInstance.setScreen("ekran_modal_szczegoly");
+  }
 }
 
-function initResearcherDock() {
+// Podpięcie przycisków otwierania/eksportu/czyszczenia w panelu badacza
+function initResearcherDockControls() {
   const btnToggle = document.getElementById("btn-toggle-researcher");
   const menu = document.getElementById("researcher-menu");
-  btnToggle.addEventListener("click", () => menu.classList.toggle("hidden"));
-  document.getElementById("btn-export-events").addEventListener("click", () => loggerInstance.exportEventsCSV());
-  document.getElementById("btn-export-aoi").addEventListener("click", () => loggerInstance.exportAoiCSV());
-  document.getElementById("btn-clear-events").addEventListener("click", () => loggerInstance.clearLogs());
+  const btnExport = document.getElementById("btn-export-events");
+  const btnClear = document.getElementById("btn-clear-events");
+
+  if (btnToggle && menu) {
+    btnToggle.addEventListener("click", () => {
+      menu.classList.toggle("hidden");
+    });
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      if (loggerInstance) loggerInstance.exportEventsCSV();
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", () => {
+      if (loggerInstance) loggerInstance.clearLogs();
+    });
+  }
 }

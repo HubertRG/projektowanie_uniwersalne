@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0, user-scalable=no">
@@ -49,7 +49,7 @@
 
     <!-- PASEK POSTĘPU I PRZYCISK WSTECZ NA EKRANIE MAPY -->
     <div id="map-progress-bar" class="map-progress-bar" data-aoi="map_progress_bar" aria-live="polite">
-      <button id="btn-map-back" class="back-btn hidden" data-aoi="btn_map_back">
+      <button id="btn-map-back" class="back-btn hidden" data-log="wstecz" data-aoi="btn_map_back" data-aoi-std="AOI_wstecz">
         <span class="btn-icon" aria-hidden="true">←</span>
         <span>Wstecz</span>
       </button>
@@ -174,7 +174,7 @@
 
     <!-- LEWY PASEK ZAKŁADEK -->
     <aside id="side-nav-left" class="side-panel-left" data-aoi="side_navigation" aria-label="Menu boczne">
-      <button class="side-btn active" data-aoi="btn_side_plan" data-screen="ekran_plan">
+      <button class="side-btn active" data-log="wstecz" data-aoi="btn_side_plan" data-aoi-std="AOI_wstecz" data-screen="ekran_plan">
         <span class="side-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
         </span>
@@ -249,7 +249,7 @@
     <!-- DOLNY PASEK: DOSTĘPNOŚĆ (LEWA) + ZOOM I PIĘTRA (PRAWA) -->
     <footer id="bottom-controls" data-aoi="floor_controls">
       <!-- PASEK DOSTĘPNOŚCI (OPCJE UNIWERSALNE) -->
-      <div class="accessibility-bar" data-aoi="accessibility_bar" role="toolbar" aria-label="Ułatwienia dostępu">
+      <div class="accessibility-bar" data-log="pasek_dostepnosci" data-aoi="AOI_dostepnosc" data-aoi-std="AOI_dostepnosc" role="toolbar" aria-label="Ułatwienia dostępu">
         <button id="btn-toggle-contrast" class="a11y-btn" data-aoi="btn_a11y_contrast" aria-pressed="false">
           <span class="a11y-icon" aria-hidden="true">◐</span>
           <span>Kontrast</span>
@@ -305,7 +305,7 @@
     <div id="module-screen-window" class="module-window hidden" data-aoi="module_screen_window" role="dialog" aria-modal="false">
       <header class="module-header">
         <div class="module-header-left">
-          <button id="btn-module-back" class="back-btn" data-aoi="btn_module_back">
+          <button id="btn-module-back" class="back-btn" data-log="wstecz" data-aoi="btn_module_back" data-aoi-std="AOI_wstecz">
             <span class="btn-icon" aria-hidden="true">←</span>
             <span>Wstecz</span>
           </button>
@@ -315,7 +315,7 @@
           </div>
         </div>
 
-        <button id="btn-close-screen-window" class="screen-close-red-x" data-aoi="btn_close_screen_window">
+        <button id="btn-close-screen-window" class="screen-close-red-x" data-log="wstecz" data-aoi="btn_close_screen_window" data-aoi-std="AOI_wstecz">
           <span aria-hidden="true">✕</span>
           <span>Zamknij</span>
         </button>
@@ -601,7 +601,7 @@
             <div class="modal-step-tag">Krok 2 z 3 • Potwierdź trasę</div>
             <h2 id="route-summary-title">Podsumowanie trasy</h2>
           </div>
-          <button id="btn-close-route-summary" class="modal-close-btn" data-aoi="btn_close_route_summary">✕ Anuluj</button>
+          <button id="btn-close-route-summary" class="modal-close-btn" data-log="wstecz" data-aoi="btn_close_route_summary" data-aoi-std="AOI_wstecz">✕ Anuluj</button>
         </header>
         <div class="summary-details-box">
           <div class="summary-row"><span>Punkt startowy:</span> <strong>Tu jesteś (Infomat, Poziom 1)</strong></div>
@@ -621,8 +621,8 @@
           </div>
         </div>
         <footer class="modal-actions">
-          <button id="btn-cancel-route-summary" class="kiosk-action-btn secondary" data-aoi="btn_cancel_route_summary">✕ Anuluj</button>
-          <button id="btn-confirm-route-summary" class="kiosk-action-btn" data-aoi="btn_confirm_route_summary">✓ Pokaż trasę na mapie</button>
+          <button id="btn-cancel-route-summary" class="kiosk-action-btn secondary" data-log="wstecz" data-aoi="btn_cancel_route_summary" data-aoi-std="AOI_wstecz">✕ Anuluj</button>
+          <button id="btn-confirm-route-summary" class="kiosk-action-btn" data-log="potwierdz_trase" data-aoi="btn_confirm_route_summary" data-aoi-std="AOI_cel">✓ Pokaż trasę na mapie</button>
         </footer>
       </div>
     </div>
@@ -668,9 +668,9 @@
             <div class="summary-row total-row"><span>Kwota do zapłaty:</span> <strong id="pay-summary-price">4,00 zł</strong></div>
           </div>
           <footer class="modal-actions">
-            <button id="btn-parking-back-1" class="kiosk-action-btn secondary" data-aoi="btn_parking_back_1">← Wstecz</button>
+            <button id="btn-parking-back-1" class="kiosk-action-btn secondary" data-log="wstecz" data-aoi="btn_parking_back_1" data-aoi-std="AOI_wstecz">← Wstecz</button>
             <button id="btn-parking-cancel-2" class="kiosk-action-btn danger-outline" data-aoi="btn_parking_cancel_2">✕ Anuluj płatność</button>
-            <button id="btn-parking-confirm-pay" class="kiosk-action-btn" data-aoi="btn_parking_confirm_pay">✓ Potwierdź i zapłać</button>
+            <button id="btn-parking-confirm-pay" class="kiosk-action-btn" data-log="potwierdz_oplate_parking" data-aoi="btn_parking_confirm_pay" data-aoi-std="AOI_cel">✓ Potwierdź i zapłać</button>
           </footer>
         </div>
 
@@ -690,7 +690,7 @@
 
     <!-- MODAL: OSTRZEŻENIE PRZED UPŁYWEM LIMITU CZASU (WCAG 2.2.1) -->
     <div id="timeout-warning-modal" class="modal-backdrop hidden" data-aoi="modal_timeout_warning" role="alertdialog" aria-modal="true" aria-labelledby="timeout-title">
-      <div class="modal-window timeout-window">
+      <div class="modal-window timeout-window" data-log="komunikat_limit_czasu" data-aoi="AOI_blad" data-aoi-std="AOI_blad">
         <header class="modal-header">
           <h2 id="timeout-title">⏱️ Czy nadal korzystasz z infomatu?</h2>
         </header>
@@ -715,7 +715,7 @@
             <span id="news-modal-date" class="news-modal-date">05.11.2026</span>
             <h2 id="news-modal-title">Tytuł</h2>
           </div>
-          <button id="btn-close-news-modal" class="modal-close-btn" data-aoi="btn_close_news_modal">✕ Zamknij</button>
+          <button id="btn-close-news-modal" class="modal-close-btn" data-log="wstecz" data-aoi="btn_close_news_modal" data-aoi-std="AOI_wstecz">✕ Zamknij</button>
         </header>
         <div class="modal-body news-modal-body">
           <div class="news-modal-image-col">
@@ -728,20 +728,59 @@
           </div>
         </div>
         <footer class="modal-actions">
-          <button id="btn-close-news-modal-bottom" class="kiosk-action-btn" data-aoi="btn_modal_news_close">← Wróć do listy</button>
+          <button id="btn-close-news-modal-bottom" class="kiosk-action-btn" data-log="wstecz" data-aoi="btn_modal_news_close" data-aoi-std="AOI_wstecz">← Wróć do listy</button>
         </footer>
       </div>
     </div>
 
-    <!-- PŁYWAJĄCY PANEL DLA BADACZA (EYETRACKER CSV) -->
-    <div id="researcher-dock" style="visibility: hidden;">
-      <button id="btn-toggle-researcher" class="dock-btn">🔬 Eyetracker Logger</button>
-      <div id="researcher-menu" class="dock-menu hidden">
-        <h4>Panel Rejestracji GP3 HD</h4>
-        <div class="dock-stats">Zdarzeń: <strong id="log-count">0</strong></div>
-        <button id="btn-export-events" class="exp-btn">💾 Pobierz zdarzenia dotknięć (CSV)</button>
-        <button id="btn-export-aoi" class="exp-btn">📐 Pobierz obszary AOI (CSV)</button>
-        <button id="btn-clear-events" class="exp-btn danger">🗑️ Wyczyść dane sesji</button>
+    <!-- PŁYWAJĄCY PANEL DLA BADACZA (ZGODNY Z PUN_zdarzenia.csv) -->
+    <div id="researcher-dock" data-log-ignore="true">
+      <button id="btn-toggle-researcher" class="dock-btn" data-log-ignore="true">🔬 Logger PUN</button>
+      <div id="researcher-menu" class="dock-menu hidden" data-log-ignore="true">
+        <h4>Rejestrator PUN_zdarzenia</h4>
+
+        <div class="dock-form-grid">
+          <label>Interfejs:
+            <input type="number" id="cfg-interfejs" value="6" min="1" max="10" />
+          </label>
+          <label>Uczestnik:
+            <input type="text" id="cfg-uczestnik" value="P01" maxlength="3" />
+          </label>
+          <label>Wersja:
+            <select id="cfg-wersja">
+              <option value="A" selected>A</option>
+              <option value="B">B</option>
+            </select>
+          </label>
+          <label>Kolejność:
+            <select id="cfg-kolejnosc">
+              <option value="AB" selected>AB</option>
+              <option value="BA">BA</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="dock-scenario-controls">
+          <div class="dock-scenario-row">
+            <select id="cfg-scenariusz">
+              <option value="S1">Scenariusz S1</option>
+              <option value="S2">Scenariusz S2</option>
+              <option value="S3">Scenariusz S3</option>
+            </select>
+            <button id="btn-scenario-start" class="exp-btn" style="background:#2E7D32;color:#fff;">▶ Start</button>
+          </div>
+          <div class="dock-scenario-row" style="margin-top:6px;">
+            <button id="btn-scenario-end-ok" class="exp-btn">✓ Koniec (Sukces=1)</button>
+            <button id="btn-scenario-abort" class="exp-btn">⏹ Przerwij (Puste)</button>
+          </div>
+        </div>
+
+        <div class="dock-stats">
+          Zdarzeń: <strong id="log-count">0</strong> | Status: <strong id="log-scenario-status">Poza scenariuszem</strong>
+        </div>
+
+        <button id="btn-export-events" class="exp-btn">💾 Pobierz PUN_zdarzenia_*.csv</button>
+        <button id="btn-clear-events" class="exp-btn danger">🗑️ Nowa sesja / Wyczyść</button>
       </div>
     </div>
   </div>

@@ -11,8 +11,8 @@
  * - Zachowanie modułów dolnych (Aktualności, Promocje, Komunikacja, Parking).
  */
 
-let loggerInstance = null;
 let currentActiveFloor = 1;
+let currentActiveModuleScreen = "ekran_plan";
 let selectedStoreId = null;
 let activeRouteStoreId = null;
 
@@ -55,11 +55,14 @@ let selectedStopId = "stop_ogrod_saski_01";
 let selectedLineNum = "20";
 
 document.addEventListener("DOMContentLoaded", () => {
-  updateKioskAspectRatio();
-  window.addEventListener("resize", updateKioskAspectRatio);
-
   loggerInstance = new EyeTrackerLogger();
-  loggerInstance.setFloor(1);
+  initResearcherDockControls();
+
+  updateKioskAspectRatio();
+  window.addEventListener("resize", () => {
+    updateKioskAspectRatio();
+    if (loggerInstance) loggerInstance.syncVisibleAois();
+  });
 
   initClock();
   initMapPanning();
@@ -70,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initModuleScreenWindow();
   initActionBubbleAndModal();
   initRouteDismissButton();
-  initResearcherDock();
 
   // Inicjalizacja górnych zakładek
   initStoresDirectoryModule();
@@ -123,6 +125,9 @@ function updateMapTransform(animate = true) {
   mapState.panY = clamped.y;
 
   stage.style.transform = `translate(${mapState.panX}px, ${mapState.panY}px) rotateX(46deg) rotateZ(-34deg) scale(${mapState.scale})`;
+  if (loggerInstance && !animate) {
+    loggerInstance.syncVisibleAois();
+  }
 }
 
 function clampPan(x, y, scale) {
@@ -265,6 +270,9 @@ function initClock() {
 }
 
 function renderStoresForFloor(floor) {
+  if (loggerInstance) {
+    loggerInstance.setFloor(floor);
+  }
   const svgLayer = document.getElementById("stores-svg-layer");
   const amenitiesContainer = document.getElementById("map-amenities-layer");
   const grid = document.getElementById("stores-puzzle-grid");
@@ -510,6 +518,10 @@ function deselectStore(resetZoom = true) {
   }
   hideActionBubble();
 
+  if (loggerInstance) {
+    loggerInstance.syncVisibleAois();
+  }
+
   if (resetZoom) {
     mapState.scale = 0.88;
     updateMapTransform();
@@ -542,6 +554,10 @@ function handleStoreClick(store) {
         positionBubbleOverStore(clickedBlock);
       }
     }, 360);
+    if (loggerInstance) {
+      const routeBtn = document.getElementById("btn-show-route");
+      loggerInstance.registerTargetAoi(routeBtn, `pokaz_droge_${store.id}`);
+    }
   }
 }
 
@@ -614,7 +630,6 @@ function expandBubbleDetails(storeId) {
   if (closeBtn) closeBtn.classList.remove("hidden");
   if (infoBtn) infoBtn.innerText = "Zwiń opis";
 
-  loggerInstance.logEvent("EXPAND_STORE_DETAILS_BUBBLE", null, { storeId: store.id, storeName: store.name });
 }
 
 function collapseBubbleDetails() {
@@ -669,6 +684,11 @@ function initActionBubbleAndModal() {
     if (storeEl) {
       positionBubbleOverStore(storeEl);
     }
+
+    if (loggerInstance) {
+      loggerInstance.syncVisibleAois();
+    }
+
   });
 
   if (btnCloseBubble) {
@@ -707,6 +727,10 @@ function dismissActiveRoute() {
   document.getElementById("route-dismiss-container").classList.add("hidden");
   document.getElementById("route-blocker-overlay").classList.add("hidden");
 
+  if (loggerInstance) {
+    loggerInstance.syncVisibleAois();
+  }
+
   // Automatyczne odznaczenie sklepu po zakończeniu trasy
   deselectStore(true);
 }
@@ -716,6 +740,11 @@ function showRouteDismissButton(storeId) {
   // Pokaż przycisk OK oraz włącz pełną blokadę reszty interfejsu
   document.getElementById("route-dismiss-container").classList.remove("hidden");
   document.getElementById("route-blocker-overlay").classList.remove("hidden");
+
+  if (loggerInstance) {
+    const okBtn = document.getElementById("btn-route-ok");
+    loggerInstance.registerTargetAoi(okBtn, `zamknij_trase_${storeId}`);
+  }
 }
 
 // ========================================================
@@ -988,6 +1017,10 @@ function executeRouteNavigation(storeId) {
 
   hideActionBubble();
   showRouteDismissButton(storeId);
+  if (loggerInstance) {
+    const okBtn = document.getElementById("btn-route-ok");
+    loggerInstance.registerTargetAoi(okBtn, `zamknij_trase_${storeId}`);
+  }
 
     // --- PRZYPADEK 1: Sklep jest na piętrze 1 (tam gdzie infomat) ---
   if (store.floor === 1) {
@@ -1109,7 +1142,6 @@ function switchFloorTab(floor) {
     const f = parseInt(btn.getAttribute("data-floor"), 10);
     btn.classList.toggle("active", f === floor);
   });
-  loggerInstance.setFloor(floor);
   renderStoresForFloor(floor);
 }
 
@@ -1177,7 +1209,10 @@ function openModuleScreen(screenId, titleText) {
   if (targetView) targetView.classList.remove("hidden");
 
   moduleWindow.classList.remove("hidden");
-  loggerInstance.setScreen(screenId);
+  currentActiveModuleScreen = screenId;
+  if (loggerInstance) {
+    loggerInstance.setScreen(screenId);
+  }
 }
 
 function returnToGalleryMap() {
@@ -1192,7 +1227,10 @@ function returnToGalleryMap() {
     planBtn.classList.add("active");
   }
 
-  loggerInstance.setScreen("ekran_plan");
+  currentActiveModuleScreen = "ekran_plan";
+  if (loggerInstance) {
+    loggerInstance.setScreen("ekran_plan");
+  }
 }
 
 function initTopSquareNavigation() {
@@ -1251,10 +1289,14 @@ function navigateToStoreOnMap(storeId) {
     const storeEl = document.getElementById(`store-${store.id}`);
     if (storeEl) {
       handleStoreClick(store);
+
+      if (loggerInstance) {
+        const routeBtn = document.getElementById("btn-show-route");
+        loggerInstance.registerTargetAoi(routeBtn, `pokaz_droge_${store.id}`);
+      }
     }
   }, 100);
 
-  loggerInstance.logEvent("NAVIGATE_STORE_FROM_TAB", null, { storeId: storeId, storeName: store.name });
 }
 
 // ========================================================
@@ -1546,7 +1588,14 @@ function updateSearchResults(query) {
         Brak wyników dla frazy "<strong>${query}</strong>". Spróbuj wpisać inną nazwę.
       </div>
     `;
+    if (loggerInstance) {
+      const errEl = document.getElementById("search-empty-error");
+      loggerInstance.logError("BRAK_WYNIKOW", `Brak wyników dla frazy: ${query}`, errEl);
+    }
     return;
+  }
+  if (loggerInstance) {
+    loggerInstance.syncVisibleAois();
   }
 
   matchedStores.forEach(store => {
@@ -1745,7 +1794,13 @@ function initNewsPromoModalEvents() {
   const closeTop = document.getElementById("btn-close-news-modal");
   const closeBottom = document.getElementById("btn-close-news-modal-bottom");
 
-  const closeModal = () => modal.classList.add("hidden");
+  const closeModal = () => {
+    modal.classList.add("hidden");
+
+    if (loggerInstance) {
+      loggerInstance.setScreen(currentActiveModuleScreen);
+    }
+  };
   closeTop.addEventListener("click", closeModal);
   closeBottom.addEventListener("click", closeModal);
 }
@@ -1759,7 +1814,9 @@ function openNewsPromoModal(data) {
   document.getElementById("news-modal-text").innerText = data.fullText;
 
   modal.classList.remove("hidden");
-  loggerInstance.logEvent("MODAL_OPEN_NEWS_PROMO", null, { title: data.title });
+  if (loggerInstance) {
+    loggerInstance.setScreen("ekran_modal_szczegoly");
+  }
 }
 
 // function initActionBubbleAndModal() {
@@ -1798,16 +1855,6 @@ function openNewsPromoModal(data) {
 
 //   document.getElementById("store-modal").classList.remove("hidden");
 // }
-
-function initResearcherDock() {
-  const btnToggle = document.getElementById("btn-toggle-researcher");
-  const menu = document.getElementById("researcher-menu");
-  btnToggle.addEventListener("click", () => menu.classList.toggle("hidden"));
-
-  document.getElementById("btn-export-events").addEventListener("click", () => loggerInstance.exportEventsCSV());
-  document.getElementById("btn-export-aoi").addEventListener("click", () => loggerInstance.exportAoiCSV());
-  document.getElementById("btn-clear-events").addEventListener("click", () => loggerInstance.clearLogs());
-}
 
 function drawRouteViaCorridors(x1, y1, x2, y2, floor) {
   const pathSvg = document.getElementById("route-line");
@@ -1876,4 +1923,30 @@ function getShapeCentroid(shape) {
   let sumX = 0, sumY = 0;
   points.forEach(p => { sumX += p.x; sumY += p.y; });
   return { x: sumX / points.length, y: sumY / points.length };
+}
+
+// Podpięcie przycisków otwierania/eksportu/czyszczenia w panelu badacza
+function initResearcherDockControls() {
+  const btnToggle = document.getElementById("btn-toggle-researcher");
+  const menu = document.getElementById("researcher-menu");
+  const btnExport = document.getElementById("btn-export-events");
+  const btnClear = document.getElementById("btn-clear-events");
+
+  if (btnToggle && menu) {
+    btnToggle.addEventListener("click", () => {
+      menu.classList.toggle("hidden");
+    });
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      if (loggerInstance) loggerInstance.exportEventsCSV();
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", () => {
+      if (loggerInstance) loggerInstance.clearLogs();
+    });
+  }
 }
