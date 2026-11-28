@@ -2366,28 +2366,27 @@ function openNewsPromoModal(data) {
   }
 }
 
-// Podpięcie przycisków otwierania/eksportu/czyszczenia w panelu badacza
 function initResearcherDockControls() {
-  const btnToggle = document.getElementById("btn-toggle-researcher");
-  const menu = document.getElementById("researcher-menu");
   const btnExport = document.getElementById("btn-export-events");
-  const btnClear = document.getElementById("btn-clear-events");
-
-  if (btnToggle && menu) {
-    btnToggle.addEventListener("click", () => {
-      menu.classList.toggle("hidden");
-    });
-  }
 
   if (btnExport) {
     btnExport.addEventListener("click", () => {
-      if (loggerInstance) loggerInstance.exportEventsCSV();
+      if (loggerInstance) loggerInstance.finishAndDownloadCSV(true);
     });
   }
 
-  if (btnClear) {
-    btnClear.addEventListener("click", () => {
-      if (loggerInstance) loggerInstance.clearLogs();
-    });
-  }
+  // Skróty klawiszowe dla badacza (niewidoczne dla uczestnika):
+  // Ctrl + Shift + Y -> zakończ scenariusz (sukces = 1) i pobierz CSV
+  // Ctrl + Shift + X -> przerwij scenariusz (sukces = puste) i pobierz CSV
+  window.addEventListener("keydown", (e) => {
+    if (!loggerInstance) return;
+
+    if (e.ctrlKey && e.shiftKey && e.code === "KeyY") {
+      e.preventDefault();
+      loggerInstance.finishAndDownloadCSV(true);
+    } else if (e.ctrlKey && e.shiftKey && e.code === "KeyX") {
+      e.preventDefault();
+      loggerInstance.finishAndDownloadCSV(false);
+    }
+  });
 }

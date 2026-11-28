@@ -11,24 +11,14 @@ class EyeTrackerLogger {
   constructor() {
     this.events = [];
 
-    // Metadane sesji (domyślne + odczyt z URL ?interfejs=6&uczestnik=P01&wersja=A&kolejnosc=AB)
-    const params = new URLSearchParams(window.location.search);
-    this.meta = {
-      interfejs: params.get("interfejs") || "6",
-      uczestnik: (params.get("uczestnik") || "P01").toUpperCase(),
-      wersja: (params.get("wersja") || (document.body.classList.contains("version-b") ? "B" : "A")).toUpperCase(),
-      kolejnosc: (params.get("kolejnosc") || "AB").toUpperCase()
-    };
+    this.meta = this.readSessionMetaFromDom();
 
-    this.currentScenario = "";      // Puste przed pierwszym startem scenariusza
-    this.scenarioStartEpoch = null; // Ustawiane przy zdarzeniu scenariusz_start
+    this.currentScenario = "";
+    this.scenarioStartEpoch = null;
     this.currentScreen = "ekran_plan";
     this.currentFloor = 1;
 
-    // Mapa aktualnie widocznych AOI na bieżącym ekranie: klucz = elementId -> { element, aoi, rect }
     this.activeAois = new Map();
-
-    // Mapowanie starych nazw data-aoi na wspólną listę ze słownika zmiennych
     this.allowedAoiNames = new Set(["AOI_cel", "AOI_wstecz", "AOI_dostepnosc", "AOI_blad"]);
 
     this.bindResearcherPanel();
@@ -38,10 +28,26 @@ class EyeTrackerLogger {
     // 1. Zdarzenie startowe: sesja
     this.logSession();
 
-    // 2. Pierwsze wejście na ekran główny (po wyrenderowaniu DOM)
     requestAnimationFrame(() => {
-      this.logScreenEntry(this.currentScreen);
+      if (this.meta.scenariusz) {
+        this.startScenario(this.meta.scenariusz);
+      } else {
+        this.logScreenEntry(this.currentScreen);
+      }
     });
+  }
+
+  readSessionMetaFromDom() {
+    const body = document.body.dataset;
+    const params = new URLSearchParams(window.location.search);
+
+    return {
+      interfejs: parseInt(params.get("interfejs") || body.interfejs || "10", 10),
+      uczestnik: (params.get("uczestnik") || body.uczestnik || "P01").trim(),
+      wersja: (params.get("wersja") || body.wersja || "B").trim(),
+      kolejnosc: (params.get("kolejnosc") || body.kolejnosc || "AB").trim(),
+      scenariusz: (params.get("scenariusz") || body.scenariusz || "S1").trim()
+    };
   }
 
   // ========================================================
@@ -554,6 +560,13 @@ class EyeTrackerLogger {
     statusEl.innerText = this.currentScenario ? `Aktywny: ${this.currentScenario}` : "Poza scenariuszem";
   }
 
+  finishAndDownloadCSV(isSuccess = true) {
+    if (this.currentScenario) {
+      this.endScenario(isSuccess ? 1 : "");
+    }
+    this.exportEventsCSV();
+  }
+
   // Eksport zgodny z PUN_zdarzenia_I{interfejs}_{uczestnik}_{wersja}.csv
   exportEventsCSV() {
     if (this.events.length === 0) {
@@ -571,7 +584,8 @@ class EyeTrackerLogger {
     const rows = this.events.map(ev => headers.map(col => ev[col]));
     const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\r\n");
 
-    const fileName = `PUN_zdarzenia_I${this.meta.interfejs}_${this.meta.uczestnik}_${this.meta.wersja}.csv`;
+    const scenTag = this.meta.scenariusz ? `_${this.meta.scenariusz}` : "";
+    const fileName = `PUN_zdarzenia_I${this.meta.interfejs}_${this.meta.uczestnik}_${this.meta.wersja}${scenTag}.csv`;
     this.downloadFile(fileName, csvContent, "text/csv;charset=utf-8;");
   }
 

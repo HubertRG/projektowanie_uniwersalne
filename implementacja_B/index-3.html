@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0, user-scalable=no">
+  <title>Infomat Galeria Handlowa — Wersja B (Dostępna / WCAG AAA)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-interfejs="5" data-uczestnik="P01" data-wersja="B" data-kolejnosc="AB" data-scenariusz="S3">
+  <div id="kiosk-app" class="font-normal">
+
+    <!-- PEŁNOEKRANOWY VIEWPORT MAPY (WIDOK 2D Z GÓRY, POWIĘKSZONE BUDYNKI) -->
+    <div id="map-viewport" data-aoi="map_container" role="region" aria-label="Interaktywny plan galerii handlowej">
+      <div id="map-stage">
+        <div id="building-base">
+          <div id="corridor-layer" class="corridor-layer"></div>
+          <div id="stores-puzzle-grid" class="puzzle-grid" style="display:none;"></div>
+
+          <svg id="stores-svg" class="stores-svg" viewBox="0 0 842 595" preserveAspectRatio="xMidYMid meet" aria-label="Plan lokali na wybranym piętrze">
+            <defs>
+              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity="0.28" />
+              </filter>
+            </defs>
+            <g id="stores-svg-layer"></g>
+          </svg>
+
+          <div id="map-amenities-layer" class="amenities-layer"></div>
+
+          <svg id="nav-path-svg" class="nav-overlay" viewBox="0 0 842 595">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#9A0007" />
+              </marker>
+            </defs>
+            <path id="route-line" d="" fill="none" stroke="#9A0007" stroke-width="7" stroke-dasharray="12 8" stroke-linecap="round" />
+          </svg>
+
+          <!-- PINEZKA INFOMATU (TYLKO PIĘTRO 1) -->
+          <div id="you-are-here-pin" class="infomat-pin" data-aoi="you_are_here_pin">
+            <div class="pin-marker" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path fill="#2E0854" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
+            <div class="pin-text">TU JESTEŚ (INFOMAT)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASEK POSTĘPU I PRZYCISK WSTECZ NA EKRANIE MAPY -->
+    <div id="map-progress-bar" class="map-progress-bar" data-aoi="map_progress_bar" aria-live="polite">
+      <button id="btn-map-back" class="back-btn hidden" data-log="wstecz" data-aoi="btn_map_back" data-aoi-std="AOI_wstecz">
+        <span class="btn-icon" aria-hidden="true">←</span>
+        <span>Wstecz</span>
+      </button>
+      <div class="progress-steps" id="map-progress-steps">
+        <span class="step-pill active" id="step-1">1. Wybierz miejsce</span>
+        <span class="step-sep" aria-hidden="true">›</span>
+        <span class="step-pill" id="step-2">2. Sprawdź szczegóły</span>
+        <span class="step-sep" aria-hidden="true">›</span>
+        <span class="step-pill" id="step-3">3. Zobacz trasę</span>
+      </div>
+    </div>
+
+    <div id="route-blocker-overlay" class="route-blocker hidden" data-aoi="route_interaction_blocker"></div>
+
+    <!-- PŁYWAJĄCY BANER AKTYWNEJ TRASY -->
+    <div id="route-floor-banner" class="route-banner hidden" role="status" aria-live="assertive">
+      <span class="route-banner-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3v4h-4v4h-4v4H7v4H3v2h6v-4h4v-4h4v-4h4V3h-2z"/></svg>
+      </span>
+      <span id="route-banner-text">Wyznaczanie trasy...</span>
+    </div>
+
+    <!-- PŁYWAJĄCE PRZYCISKI PODCZAS AKTYWNEJ TRASY -->
+    <div id="route-dismiss-container" class="route-dismiss-box hidden" data-aoi="route_dismiss_box">
+      <button id="btn-route-switch-floor" class="route-secondary-btn hidden" data-aoi="btn_route_switch_floor">
+        <span>Pokaż kolejne piętro</span>
+      </button>
+      <button id="btn-route-ok" class="route-ok-btn" data-aoi="btn_route_ok">
+        <span class="ok-check" aria-hidden="true">✓</span>
+        <span class="ok-label">Zakończ trasę i wróć</span>
+      </button>
+    </div>
+
+    <!-- PŁYWAJĄCY DYMEK AKCJI SKLEPU (POWIĘKSZONE CELE DOTYKOWE >= 48px) -->
+    <div id="store-action-bubble" class="action-bubble-2d hidden" data-aoi="store_actions_bubble" role="dialog" aria-label="Informacje o wybranym lokalu">
+      <div class="bubble-header-2d">
+        <div id="bubble-store-logo" class="bubble-logo-box-2d">LOGO</div>
+        <div class="bubble-title-group-2d">
+          <span id="bubble-store-name" class="bubble-title-2d">Nazwa Sklepu</span>
+          <span id="bubble-store-cat-floor" class="bubble-subtitle-2d">Poziom 1 • Moda</span>
+        </div>
+        <button id="btn-close-bubble" class="bubble-close-x" data-aoi="btn_close_bubble" aria-label="Zamknij okno sklepu">
+          <span aria-hidden="true">✕</span>
+          <span class="close-x-text">Zamknij</span>
+        </button>
+      </div>
+
+      <div id="bubble-expanded-details" class="bubble-details-panel hidden" data-aoi="bubble_expanded_details">
+        <div class="bubble-detail-row">
+          <strong>Godziny otwarcia:</strong> <span>09:00 – 21:00</span>
+        </div>
+        <div class="bubble-detail-row">
+          <strong>Telefon:</strong> <span>+48 58 777 00 00</span>
+        </div>
+        <p id="bubble-store-desc" class="bubble-detail-desc">
+          Lokal jest dostępny dla osób na wózkach. Szerokie wejście bez progów.
+        </p>
+      </div>
+
+      <div class="bubble-buttons-2d">
+        <button id="btn-show-route" class="bubble-btn-2d primary" data-aoi="btn_bubble_route">
+          <span aria-hidden="true">🧭</span> Pokaż drogę
+        </button>
+        <button id="btn-show-modal" class="bubble-btn-2d secondary" data-aoi="btn_bubble_info">
+          <span aria-hidden="true">ℹ️</span> O sklepie
+        </button>
+      </div>
+      <div class="bubble-arrow-2d"></div>
+    </div>
+
+    <!-- GÓRNY PASEK ZAKŁADEK -->
+    <header id="top-header" data-aoi="header_bar">
+      <div class="header-left floating-card" data-aoi="mall_info">
+        <h1 class="mall-title">GALERIA HANDLOWA</h1>
+        <p class="mall-hours">Pon.–Sob. 09:00–21:00 | Nd. handlowe 10:00–20:00</p>
+      </div>
+
+      <nav class="top-nav" data-aoi="top_navigation" aria-label="Główne kategorie">
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_sklepy" data-screen="ekran_sklepy">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12zm-7-8c-1.66 0-3-1.34-3-3H7c0 2.76 2.24 5 5 5s5-2.24 5-5h-2c0 1.66-1.34 3-3 3z"/></svg>
+          </span>
+          <span class="label">SKLEPY</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_gastro" data-screen="ekran_restauracje">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
+          </span>
+          <span class="label">JEDZENIE<br>I KAWA</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_fitness" data-screen="ekran_fitness">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>
+          </span>
+          <span class="label">KLUB<br>FITNESS</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_uslugi" data-screen="ekran_uslugi">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+          </span>
+          <span class="label">USŁUGI</span>
+        </button>
+        <button class="nav-btn top-square-btn" data-aoi="btn_top_kino" data-screen="ekran_kino">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+          </span>
+          <span class="label">KINO<br>SEANSE</span>
+        </button>
+        <button class="nav-btn top-square-btn search-btn" data-aoi="btn_top_szukaj" data-screen="ekran_szukaj">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </span>
+          <span class="label">SZUKAJ</span>
+        </button>
+      </nav>
+
+      <div class="header-right floating-card" data-aoi="clock_widget">
+        <div id="live-time" class="time-display">12:00:00</div>
+        <div id="live-date" class="date-display">Piątek, 20 listopada 2026</div>
+      </div>
+    </header>
+
+    <!-- LEWY PASEK ZAKŁADEK -->
+    <aside id="side-nav-left" class="side-panel-left" data-aoi="side_navigation" aria-label="Menu boczne">
+      <button class="side-btn active" data-log="wstecz" data-aoi="btn_side_plan" data-aoi-std="AOI_wstecz" data-screen="ekran_plan">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+        </span>
+        <span class="side-title">Plan Galerii</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_aktualnosci" data-screen="ekran_aktualnosci">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </span>
+        <span class="side-title">Aktualności</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_promocje" data-screen="ekran_promocje">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+        </span>
+        <span class="side-title">Promocje</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_komunikacja" data-screen="ekran_komunikacja">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
+        </span>
+        <span class="side-title">Autobusy</span>
+      </button>
+      <button class="side-btn" data-aoi="btn_side_parking" data-screen="ekran_parking">
+        <span class="side-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 9.5c0 .83-.67 1.5-1.5 1.5H10v3H8V7h4.5c.83 0 1.5.67 1.5 1.5v4zm-3-1h1.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H10v1z"/></svg>
+        </span>
+        <span class="side-title">Parking</span>
+      </button>
+    </aside>
+
+    <!-- PRAWY PANEL SYMBOLI (LEGENDA Z DUŻYMI PRZYCISKAMI I PODPISAMI) -->
+    <aside id="side-symbols-right" class="side-symbols" data-aoi="symbols_legend" aria-label="Legenda symboli na mapie">
+      <button type="button" class="symbol-card" data-aoi="sym_stairs" data-facility="escalator" aria-label="Podświetl schody ruchome">
+        <div class="symbol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3v4h-4v4h-4v4H7v4H3v2h6v-4h4v-4h4v-4h4V3h-2z"/></svg>
+        </div>
+        <span class="symbol-label">Schody<br>ruchome</span>
+      </button>
+      <button type="button" class="symbol-card" data-aoi="sym_elevator" data-facility="elevators" aria-label="Podświetl windę">
+        <div class="symbol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 2h10c1.1 0 2 .9 2 2v16c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2zm0 4v14h10V6H7zm3 3l2-2 2 2h-4zm4 6l-2 2-2-2h4z"/></svg>
+        </div>
+        <span class="symbol-label">Winda</span>
+      </button>
+      <button type="button" class="symbol-card" data-aoi="sym_wc" data-facility="toilet" aria-label="Podświetl toalety">
+        <div class="symbol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 22H7V11c-.55 0-1-.45-1-1V5c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v5c0 .55-.45 1-1 1v11zm9 0h-2V13h-1l-1.5-6h5l-1.5 6h-1v9zm-1.5-16a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM8 3.5A1.5 1.5 0 1 1 8 .5a1.5 1.5 0 0 1 0 3z"/></svg>
+        </div>
+        <span class="symbol-label">Toalety</span>
+      </button>
+      <button type="button" class="symbol-card" data-aoi="sym_atm" data-facility="atm" aria-label="Podświetl bankomat">
+        <div class="symbol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 4v16h20V4H2zm18 14H4V6h16v12zm-3-8h-3V8h3v2zm-5 4H8v-2h4v2zm-2-4H8V8h2v2zm6 4h-2v-2h2v2z"/></svg>
+        </div>
+        <span class="symbol-label">Bankomat</span>
+      </button>
+      <button type="button" class="symbol-card" data-aoi="sym_baby" data-facility="mother-child-room" aria-label="Podświetl pokój dla rodzica z dzieckiem">
+        <div class="symbol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-5.5 9c-.8 0-1.5.7-1.5 1.5v6c0 .8.7 1.5 1.5 1.5H8v2h8v-2h1.5c.8 0 1.5-.7 1.5-1.5v-6c0-.8-.7-1.5-1.5-1.5h-11z"/></svg>
+        </div>
+        <span class="symbol-label">Pokój<br>z dzieckiem</span>
+      </button>
+      <button type="button" class="symbol-card" data-aoi="sym_parking_pay" data-facility="parking-pay" aria-label="Podświetl automat parkingowy">
+        <div class="symbol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 9.5c0 .8-.7 1.5-1.5 1.5H10v3H8V8h3.5c.8 0 1.5.7 1.5 1.5v2zM10 11h1.5c.3 0 .5-.2.5-.5s-.2-.5-.5-.5H10v1z"/></svg>
+        </div>
+        <span class="symbol-label">Kasa<br>parkingowa</span>
+      </button>
+    </aside>
+
+    <!-- DOLNY PASEK: DOSTĘPNOŚĆ (LEWA) + ZOOM I PIĘTRA (PRAWA) -->
+    <footer id="bottom-controls" data-aoi="floor_controls">
+      <!-- PASEK DOSTĘPNOŚCI (OPCJE UNIWERSALNE) -->
+      <div class="accessibility-bar" data-log="pasek_dostepnosci" data-aoi="AOI_dostepnosc" data-aoi-std="AOI_dostepnosc" role="toolbar" aria-label="Ułatwienia dostępu">
+        <button id="btn-toggle-contrast" class="a11y-btn" data-aoi="btn_a11y_contrast" aria-pressed="false">
+          <span class="a11y-icon" aria-hidden="true">◐</span>
+          <span>Kontrast</span>
+        </button>
+        <button id="btn-toggle-fontsize" class="a11y-btn" data-aoi="btn_a11y_fontsize">
+          <span class="a11y-icon" aria-hidden="true">A+</span>
+          <span id="fontsize-label">Tekst: 100%</span>
+        </button>
+        <button id="btn-toggle-wheelchair" class="a11y-btn" data-aoi="btn_a11y_wheelchair" aria-pressed="false">
+          <span class="a11y-icon" aria-hidden="true">♿</span>
+          <span>Tryb wózek</span>
+        </button>
+        <button id="btn-toggle-voice" class="a11y-btn" data-aoi="btn_a11y_voice" aria-pressed="false">
+          <span class="a11y-icon" aria-hidden="true">🔊</span>
+          <span>Lektor: Wył.</span>
+        </button>
+      </div>
+
+      <!-- STEROWANIE POWIĘKSZENIEM MAPY (WCAG 2.5.1) -->
+      <div class="map-zoom-group" data-aoi="map_zoom_controls" role="group" aria-label="Powiększenie mapy">
+        <button id="btn-zoom-out" class="zoom-btn" data-aoi="btn_zoom_out" aria-label="Pomniejsz mapę">
+          <span aria-hidden="true">−</span> Pomniejsz
+        </button>
+        <button id="btn-zoom-in" class="zoom-btn" data-aoi="btn_zoom_in" aria-label="Powiększ mapę">
+          <span aria-hidden="true">+</span> Powiększ
+        </button>
+      </div>
+
+      <!-- WYBÓR PIĘTER Z PEŁNYMI PODPISAMI -->
+      <div class="floor-group" role="group" aria-label="Wybór piętra">
+        <button class="floor-btn" data-floor="0" data-aoi="btn_floor_0">Poziom 0 (Parter)</button>
+        <button class="floor-btn active" data-floor="1" data-aoi="btn_floor_1">Poziom 1 (Tu jesteś)</button>
+        <button class="floor-btn" data-floor="2" data-aoi="btn_floor_2">Poziom 2</button>
+      </div>
+
+      <button id="btn-where-am-i" class="where-btn" data-aoi="btn_where_am_i">
+        <span class="where-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        </span>
+        <span>Gdzie jestem?</span>
+      </button>
+    </footer>
+
+    <!-- PASEK NAPISÓW DLA LEKTORA (KOMUNIKATY GŁOSOWE Z NAPISAMI) -->
+    <div id="voice-caption-bar" class="voice-caption-bar hidden" role="status" aria-live="polite" data-aoi="voice_caption_bar">
+      <span class="caption-badge">NAPISY</span>
+      <span id="voice-caption-text">Witamy w infomacie Galerii Handlowej.</span>
+    </div>
+
+    <!-- ========================================================
+         OKNO MODUŁOWE DLA WSZYSTKICH ZAKŁADEK
+         ======================================================== -->
+    <div id="module-screen-window" class="module-window hidden" data-aoi="module_screen_window" role="dialog" aria-modal="false">
+      <header class="module-header">
+        <div class="module-header-left">
+          <button id="btn-module-back" class="back-btn" data-log="wstecz" data-aoi="btn_module_back" data-aoi-std="AOI_wstecz">
+            <span class="btn-icon" aria-hidden="true">←</span>
+            <span>Wstecz</span>
+          </button>
+          <div class="module-title-block">
+            <div id="module-breadcrumb" class="module-breadcrumb">Krok 1 z 2: Plan Galerii › Sklepy</div>
+            <h2 id="module-screen-title" class="module-title">Tytuł Zakładki</h2>
+          </div>
+        </div>
+
+        <button id="btn-close-screen-window" class="screen-close-red-x" data-log="wstecz" data-aoi="btn_close_screen_window" data-aoi-std="AOI_wstecz">
+          <span aria-hidden="true">✕</span>
+          <span>Zamknij</span>
+        </button>
+      </header>
+
+      <div id="module-screen-body" class="module-body">
+        <!-- 1. Widok: SKLEPY -->
+        <div id="view-ekran_sklepy" class="tab-view-content hidden full-screen-view">
+          <div class="stores-directory-container" data-aoi="stores_directory_container">
+            <div class="stores-categories-col">
+              <h3 class="side-category-title">KATEGORIE</h3>
+              <div class="categories-list-scroll custom-scrollbar" id="stores-categories-list" data-aoi="stores_categories_list"></div>
+            </div>
+            <div class="stores-cards-col">
+              <div class="stores-cards-header">
+                <span class="category-active-label" id="stores-active-cat-label">Wszystkie sklepy</span>
+                <span class="stores-count-info" id="stores-count-info">Dotknij sklep, aby zobaczyć go na mapie</span>
+              </div>
+              <div class="stores-cards-grid custom-scrollbar" id="stores-catalog-grid" data-aoi="stores_catalog_grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Widok: RESTAURACJE I KAWIARNIE -->
+        <div id="view-ekran_restauracje" class="tab-view-content hidden full-screen-view">
+          <div class="grid-4x3-container custom-scrollbar" id="restaurants-grid" data-aoi="restaurants_grid"></div>
+        </div>
+
+        <!-- 3. Widok: KLUB FITNESS (PROSTY JĘZYK) -->
+        <div id="view-ekran_fitness" class="tab-view-content hidden full-screen-view">
+          <div class="fitness-layout-container" data-aoi="fitness_layout_container">
+            <div class="fitness-col-left">
+              <div class="fitness-card brand-card">
+                <div class="fitness-logo-wrapper">
+                  <div class="fitness-logo-box">CityFit</div>
+                  <span class="fitness-floor-tag">Poziom 2</span>
+                </div>
+                <div class="fitness-meta-list">
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon" aria-hidden="true">⏰</span>
+                    <div>
+                      <strong>Godziny otwarcia:</strong>
+                      <p>Czynne całą dobę (24/7), także w niedziele i święta.</p>
+                    </div>
+                  </div>
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon" aria-hidden="true">📞</span>
+                    <div>
+                      <strong>Telefon do recepcji:</strong>
+                      <p>+48 58 881 22 00</p>
+                    </div>
+                  </div>
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon" aria-hidden="true">✉️</span>
+                    <div>
+                      <strong>E-mail:</strong>
+                      <p>kontakt.metropolia@cityfit.pl</p>
+                    </div>
+                  </div>
+                  <div class="fitness-meta-item">
+                    <span class="meta-icon" aria-hidden="true">📍</span>
+                    <div>
+                      <strong>Gdzie nas znajdziesz:</strong>
+                      <p>Poziom 2, obok strefy jedzenia i kina Cinema City.</p>
+                    </div>
+                  </div>
+                </div>
+                <button class="kiosk-action-btn locate-store-btn" data-store-id="s2_cityfit" data-aoi="btn_locate_cityfit">
+                  📍 Pokaż CityFit na mapie
+                </button>
+              </div>
+            </div>
+
+            <div class="fitness-col-right custom-scrollbar">
+              <div class="fitness-card info-card">
+                <h3 class="fitness-sec-title">O klubie CityFit</h3>
+                <p class="fitness-lead-desc">CityFit to duża, samoobsługowa siłownia dla początkujących i zaawansowanych. Możesz tu ćwiczyć o każdej porze dnia i nocy.</p>
+
+                <h4 class="fitness-sub-title">Strefy do ćwiczeń</h4>
+                <div class="fitness-zones-grid">
+                  <div class="fitness-zone-box">
+                    <strong>1. Strefa Cardio</strong>
+                    <p>Bieżnie, rowerki, orbitreki i wioślarze z ekranami dotykowymi.</p>
+                  </div>
+                  <div class="fitness-zone-box">
+                    <strong>2. Maszyny siłowe</strong>
+                    <p>Proste w obsłudze maszyny z łatwą zmianą obciążenia.</p>
+                  </div>
+                  <div class="fitness-zone-box">
+                    <strong>3. Wolne ciężary</strong>
+                    <p>Hantle do 50 kg, ławki do ćwiczeń i strefa podnoszenia ciężarów.</p>
+                  </div>
+                  <div class="fitness-zone-box">
+                    <strong>4. Rozciąganie i rozgrzewka</strong>
+                    <p>Maty, piłki, taśmy TRX oraz dużo miejsca na spokojną rozgrzewkę.</p>
+                  </div>
+                </div>
+
+                <h4 class="fitness-sub-title">Najważniejsze zasady</h4>
+                <ul class="fitness-rules-bullets">
+                  <li><strong>Wygodne wejście:</strong> Wchodzisz z aplikacją w telefonie (kod QR).</li>
+                  <li><strong>Bez długich umów:</strong> Możesz kupić wejście na 1 dzień lub karnet miesięczny.</li>
+                  <li><strong>Darmowa woda:</strong> Na miejscu są bezpłatne punkty z filtrowaną wodą.</li>
+                  <li><strong>Darmowy parking:</strong> Klienci klubu parkują za darmo do 3 godzin.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Widok: USŁUGI -->
+        <div id="view-ekran_uslugi" class="tab-view-content hidden full-screen-view">
+          <div class="grid-4x3-container custom-scrollbar" id="services-grid" data-aoi="services_grid"></div>
+        </div>
+
+        <!-- 5. Widok: REPERTUAR KINA (WERSJA DOSTĘPNA B - FILTR PO PIERWSZEJ LITERZE) -->
+        <div id="view-ekran_kino" class="tab-view-content hidden full-screen-view">
+          <div class="cinema-repertoire-wrapper custom-scrollbar" data-aoi="cinema_repertoire_wrapper">
+            <div class="cinema-header-bar">
+              <div>
+                <div class="cinema-brand">Cinema City — Poziom 2</div>
+                <div class="cinema-date-tag">Wybierz pierwszą literę tytułu, aby przefiltrować seanse</div>
+              </div>
+              <button class="kiosk-action-btn locate-cinema-btn" data-store-id="s2_cinema" data-aoi="btn_locate_cinema">
+                📍 Pokaż kino na mapie
+              </button>
+            </div>
+          
+            <!-- Pasek dużych przycisków dotykowych z pierwszymi literami tytułów -->
+            <div class="cinema-alpha-filter" id="cinema-alpha-filter" data-aoi="cinema_alpha_filter"></div>
+          
+            <!-- Lista kart filmowych -->
+            <div class="cinema-movies-list" id="cinema-repertoire-body" data-aoi="cinema_movies_list"></div>
+          </div>
+        </div>
+
+        <!-- 6. Widok: SZUKAJ -->
+        <div id="view-ekran_szukaj" class="tab-view-content hidden full-screen-view">
+          <div class="search-module-container" data-aoi="search_module_container">
+            <div class="search-left-col">
+              <div class="search-input-box">
+                <span class="search-icon-symbol" aria-hidden="true">🔍</span>
+                <input type="text" id="virtual-search-input" class="virtual-input" placeholder="Wpisz nazwę sklepu za pomocą klawiatury poniżej..." readonly data-aoi="virtual_search_input" aria-label="Wpisana nazwa sklepu" />
+                <button id="btn-clear-search" class="clear-search-btn" data-aoi="btn_clear_search">✕ Wyczyść</button>
+              </div>
+
+              <div class="onscreen-keyboard-wrapper" id="onscreen-keyboard" data-aoi="onscreen_keyboard"></div>
+            </div>
+
+            <div class="search-right-col">
+              <div class="search-results-header">
+                <h3 class="results-header-title">WYNIKI</h3>
+                <span class="results-count-badge" id="search-results-count">0 lokali</span>
+              </div>
+              <div class="search-results-list custom-scrollbar" id="search-results-list" data-aoi="search_results_list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Widok: AKTUALNOŚCI -->
+        <div id="view-ekran_aktualnosci" class="tab-view-content hidden full-screen-view">
+          <div class="cards-scroll-container custom-scrollbar" id="news-cards-container" data-aoi="news_cards_scroll"></div>
+        </div>
+
+        <!-- 8. Widok: PROMOCJE -->
+        <div id="view-ekran_promocje" class="tab-view-content hidden full-screen-view">
+          <div class="cards-scroll-container custom-scrollbar" id="promo-cards-container" data-aoi="promo_cards_scroll"></div>
+        </div>
+
+        <!-- 9. Widok: KOMUNIKACJA (WERSJA DOSTĘPNA B - AKTUALNA GODZINA + ROZKŁAD DLA PRZYSTANKU) -->
+        <div id="view-ekran_komunikacja" class="tab-view-content hidden full-screen-view">
+          <div class="transit-container" data-aoi="transit_container">
+            <!-- Lewa kolumna: Przystanek oraz Linie -->
+            <div class="transit-col-left">
+              <div class="transit-box stops-box">
+                <h3 class="transit-box-title">1. WYBIERZ PRZYSTANEK</h3>
+                <div class="transit-stops-list custom-scrollbar" id="transit-stops-list" data-aoi="transit_stops_list"></div>
+              </div>
+            
+              <div class="transit-box lines-box">
+                <h3 class="transit-box-title">2. LINIE NA TYM PRZYSTANKU</h3>
+                <div class="transit-lines-list custom-scrollbar" id="transit-lines-list" data-aoi="transit_lines_list"></div>
+              </div>
+            </div>
+          
+            <!-- Prawa kolumna: Przełącznik trybu + inteligentny rozkład -->
+            <div class="transit-col-right">
+              <div class="transit-mode-bar" data-aoi="transit_mode_bar">
+                <button type="button" class="transit-mode-btn active" id="btn-mode-stop-departures" data-aoi="btn_transit_mode_stop">
+                  ⏱ Najbliższe odjazdy z przystanku
+                </button>
+                <button type="button" class="transit-mode-btn" id="btn-mode-line-schedule" data-aoi="btn_transit_mode_line">
+                  📋 Rozkład wybranej linii
+                </button>
+              </div>
+            
+              <!-- Nagłówek kontekstowy -->
+              <div class="transit-selected-header" id="transit-selected-header" data-aoi="transit_selected_header">
+                <div class="transit-line-badge" id="selected-line-badge">115</div>
+                <div class="transit-selected-info">
+                  <div class="transit-sel-stop" id="selected-stop-name">Przystanek: Galeria Handlowa 01</div>
+                  <div class="transit-sel-dest" id="selected-dest-name">Kierunek: Dworzec Główny PKP</div>
+                </div>
+                <div class="transit-live-clock-pill" id="transit-now-pill">Teraz: 13:18</div>
+              </div>
+            
+              <!-- Kontener 1: Najbliższe odjazdy wszystkich linii z danego przystanku -->
+              <div class="transit-stop-board custom-scrollbar" id="transit-stop-board" data-aoi="transit_stop_board"></div>
+            
+              <!-- Kontener 2: Godzinowy rozkład konkretnej linii z podświetleniem aktualnej godziny -->
+              <div class="transit-schedule-wrapper custom-scrollbar hidden" id="transit-line-schedule-wrapper" data-aoi="transit_schedule_table">
+                <table class="schedule-table">
+                  <thead>
+                    <tr>
+                      <th class="th-hour">Godzina</th>
+                      <th class="th-minutes">Minuty odjazdu (wyróżniono najbliższy kurs)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transit-schedule-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10. Widok: PARKING (PROSTY JĘZYK + OPŁATA Z PODSUMOWANIEM I ANULOWANIEM) -->
+        <div id="view-ekran_parking" class="tab-view-content hidden full-screen-view">
+          <div class="parking-container" data-aoi="parking_container">
+            <div class="parking-col-left">
+              <div class="parking-card pricing-card">
+                <div class="parking-header-row">
+                  <h3 class="parking-card-title">ILE KOSZTUJE PARKING?</h3>
+                  <button id="btn-open-parking-pay" class="kiosk-action-btn" data-aoi="btn_open_parking_pay">
+                    💳 Opłać bilet parkingowy
+                  </button>
+                </div>
+                <table class="pricing-table">
+                  <tbody>
+                    <tr><td>Pierwsza godzina:</td><td class="price-val free">0 zł (Za darmo)</td></tr>
+                    <tr><td>Druga godzina:</td><td class="price-val">4,00 zł</td></tr>
+                    <tr><td>Trzecia godzina:</td><td class="price-val">5,00 zł</td></tr>
+                    <tr><td>Każda kolejna godzina:</td><td class="price-val">6,00 zł</td></tr>
+                    <tr><td>Z biletem do kina Cinema City:</td><td class="price-val promo">+2 godziny za darmo</td></tr>
+                    <tr><td>Dla klientów klubu CityFit:</td><td class="price-val promo">3 godziny za darmo</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="parking-card notices-card">
+                <h3 class="parking-card-title">WAŻNE ZASADY</h3>
+                <ul class="parking-notices-list">
+                  <li><strong>Wyjazd po opłacie:</strong> Masz <strong>15 minut</strong>, aby wyjechać z parkingu.</li>
+                  <li><strong>Maksymalna cena za dzień:</strong> Zapłacisz najwyżej <strong>60,00 zł</strong> za dobę.</li>
+                  <li><strong>Zgubiony bilet:</strong> Opłata za zgubienie wynosi <strong>50,00 zł</strong> plus czas postoju.</li>
+                  <li><strong>Jak zapłacić:</strong> Kartą, telefonem (BLIK) lub gotówką w kasie parkingowej.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="parking-col-right">
+              <div class="parking-card rules-card">
+                <h3 class="parking-card-title">REGULAMIN W SKRÓCIE</h3>
+                <div class="rules-scroll-area custom-scrollbar" data-aoi="parking_rules_scroll">
+                  <h4>1. Kiedy parking jest czynny?</h4>
+                  <p>Parking jest otwarty całą dobę, przez 7 dni w tygodniu. Parking nie jest strzeżony.</p>
+                  <h4>2. Bezpieczna jazda</h4>
+                  <p>Jedź powoli — maksymalnie 10 km/h. Zwracaj uwagę na pieszych i znaki.</p>
+                  <p>Nie parkuj na drogach pożarowych ani na miejscach dla osób z niepełnosprawnościami bez uprawnień.</p>
+                  <h4>3. Rzeczy w samochodzie</h4>
+                  <p>Nie zostawiaj cennych rzeczy na widoku. Galeria nie odpowiada za rzeczy zostawione w aucie.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PODSUMOWANIE TRASY PRZED URUCHOMIENIEM (WCAG 3.3.4 / WYBÓR WINDY) -->
+    <div id="route-summary-modal" class="modal-backdrop hidden" data-aoi="modal_route_summary" role="dialog" aria-modal="true" aria-labelledby="route-summary-title">
+      <div class="modal-window">
+        <header class="modal-header">
+          <div>
+            <div class="modal-step-tag">Krok 2 z 3 • Potwierdź trasę</div>
+            <h2 id="route-summary-title">Podsumowanie trasy</h2>
+          </div>
+          <button id="btn-close-route-summary" class="modal-close-btn" data-log="wstecz" data-aoi="btn_close_route_summary" data-aoi-std="AOI_wstecz">✕ Anuluj</button>
+        </header>
+        <div class="summary-details-box">
+          <div class="summary-row"><span>Punkt startowy:</span> <strong>Tu jesteś (Infomat, Poziom 1)</strong></div>
+          <div class="summary-row"><span>Cel podróży:</span> <strong id="summary-dest-name">—</strong></div>
+          <div class="summary-row"><span>Piętro docelowe:</span> <strong id="summary-dest-floor">—</strong></div>
+          <div class="summary-row"><span>Szacowany czas dojścia:</span> <strong id="summary-walk-time">ok. 2 min</strong></div>
+        </div>
+        <div id="route-mode-selector" class="route-mode-selector hidden">
+          <p class="route-mode-label">Wybierz sposób zmiany piętra:</p>
+          <div class="route-mode-buttons">
+            <button type="button" id="btn-mode-escalator" class="mode-choice-btn active" data-aoi="btn_mode_escalator">
+              🪜 Schody ruchome
+            </button>
+            <button type="button" id="btn-mode-elevator" class="mode-choice-btn" data-aoi="btn_mode_elevator">
+              ♿ Winda (bez barier)
+            </button>
+          </div>
+        </div>
+        <footer class="modal-actions">
+          <button id="btn-cancel-route-summary" class="kiosk-action-btn secondary" data-log="wstecz" data-aoi="btn_cancel_route_summary" data-aoi-std="AOI_wstecz">✕ Anuluj</button>
+          <button id="btn-confirm-route-summary" class="kiosk-action-btn" data-log="potwierdz_trase" data-aoi="btn_confirm_route_summary" data-aoi-std="AOI_cel">✓ Pokaż trasę na mapie</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL: OPŁATA ZA PARKING (PODSUMOWANIE PRZED PŁATNOŚCIĄ I ANULOWANIE) -->
+    <div id="parking-pay-modal" class="modal-backdrop hidden" data-aoi="modal_parking_pay" role="dialog" aria-modal="true" aria-labelledby="parking-pay-title">
+      <div class="modal-window">
+        <header class="modal-header">
+          <div>
+            <div id="parking-pay-step-label" class="modal-step-tag">Krok 1 z 3 • Wybierz czas postoju</div>
+            <h2 id="parking-pay-title">Opłata za bilet parkingowy</h2>
+          </div>
+          <button id="btn-close-parking-pay" class="modal-close-btn" data-aoi="btn_close_parking_pay">✕ Anuluj</button>
+        </header>
+
+        <!-- Krok 1: Wybór czasu postoju -->
+        <div id="parking-step-1" class="parking-pay-step">
+          <p class="plain-lead">Wybierz swój bilet (czas postoju na parkingu):</p>
+          <div class="parking-tariff-grid">
+            <button type="button" class="tariff-btn active" data-hours="2" data-price="4,00 zł" data-aoi="btn_tariff_2h">
+              <strong>Do 2 godzin</strong><span>4,00 zł</span>
+            </button>
+            <button type="button" class="tariff-btn" data-hours="3" data-price="9,00 zł" data-aoi="btn_tariff_3h">
+              <strong>Do 3 godzin</strong><span>9,00 zł</span>
+            </button>
+            <button type="button" class="tariff-btn" data-hours="4" data-price="15,00 zł" data-aoi="btn_tariff_4h">
+              <strong>Do 4 godzin</strong><span>15,00 zł</span>
+            </button>
+          </div>
+          <footer class="modal-actions">
+            <button id="btn-parking-cancel-1" class="kiosk-action-btn secondary" data-aoi="btn_parking_cancel_1">✕ Anuluj</button>
+            <button id="btn-parking-next-2" class="kiosk-action-btn" data-aoi="btn_parking_next_2">Dalej: Podsumowanie →</button>
+          </footer>
+        </div>
+
+        <!-- Krok 2: PODSUMOWANIE PRZED PŁATNOŚCIĄ -->
+        <div id="parking-step-2" class="parking-pay-step hidden">
+          <p class="plain-lead">Sprawdź dane przed zapłatą. Możesz wrócić lub anulować.</p>
+          <div class="summary-details-box">
+            <div class="summary-row"><span>Usługa:</span> <strong>Opłata za parking podziemny</strong></div>
+            <div class="summary-row"><span>Wybrany czas postoju:</span> <strong id="pay-summary-hours">Do 2 godzin</strong></div>
+            <div class="summary-row"><span>Czas na wyjazd po opłacie:</span> <strong>15 minut</strong></div>
+            <div class="summary-row total-row"><span>Kwota do zapłaty:</span> <strong id="pay-summary-price">4,00 zł</strong></div>
+          </div>
+          <footer class="modal-actions">
+            <button id="btn-parking-back-1" class="kiosk-action-btn secondary" data-log="wstecz" data-aoi="btn_parking_back_1" data-aoi-std="AOI_wstecz">← Wstecz</button>
+            <button id="btn-parking-cancel-2" class="kiosk-action-btn danger-outline" data-aoi="btn_parking_cancel_2">✕ Anuluj płatność</button>
+            <button id="btn-parking-confirm-pay" class="kiosk-action-btn" data-log="potwierdz_oplate_parking" data-aoi="btn_parking_confirm_pay" data-aoi-std="AOI_cel">✓ Potwierdź i zapłać</button>
+          </footer>
+        </div>
+
+        <!-- Krok 3: Potwierdzenie -->
+        <div id="parking-step-3" class="parking-pay-step hidden">
+          <div class="pay-success-box">
+            <div class="success-icon" aria-hidden="true">✓</div>
+            <h3>Płatność zakończona!</h3>
+            <p>Twój bilet został opłacony. Masz <strong>15 minut</strong> na wyjazd z parkingu.</p>
+          </div>
+          <footer class="modal-actions">
+            <button id="btn-parking-done" class="kiosk-action-btn" data-aoi="btn_parking_done">✓ Zamknij i wróć</button>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: OSTRZEŻENIE PRZED UPŁYWEM LIMITU CZASU (WCAG 2.2.1) -->
+    <div id="timeout-warning-modal" class="modal-backdrop hidden" data-aoi="modal_timeout_warning" role="alertdialog" aria-modal="true" aria-labelledby="timeout-title">
+      <div class="modal-window timeout-window" data-log="komunikat_limit_czasu" data-aoi="AOI_blad" data-aoi-std="AOI_blad">
+        <header class="modal-header">
+          <h2 id="timeout-title">⏱️ Czy nadal korzystasz z infomatu?</h2>
+        </header>
+        <p class="plain-lead">
+          Ekran wróci na stronę startową za <strong id="timeout-countdown">20</strong> sekund, aby przygotować infomat dla kolejnej osoby.
+        </p>
+        <div class="timeout-progress-track">
+          <div id="timeout-progress-fill" class="timeout-progress-fill"></div>
+        </div>
+        <footer class="modal-actions">
+          <button id="btn-timeout-reset" class="kiosk-action-btn secondary" data-aoi="btn_timeout_reset">Zakończ teraz</button>
+          <button id="btn-timeout-extend" class="kiosk-action-btn" data-aoi="btn_timeout_extend">✓ Przedłuż czas (+60 s)</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL ARTYKUŁU / PROMOCJI -->
+    <div id="news-promo-modal" class="modal-backdrop hidden" data-aoi="modal_news_promo_details" role="dialog" aria-modal="true">
+      <div class="modal-window news-modal-window">
+        <header class="modal-header">
+          <div class="modal-header-titles">
+            <span id="news-modal-date" class="news-modal-date">05.11.2026</span>
+            <h2 id="news-modal-title">Tytuł</h2>
+          </div>
+          <button id="btn-close-news-modal" class="modal-close-btn" data-log="wstecz" data-aoi="btn_close_news_modal" data-aoi-std="AOI_wstecz">✕ Zamknij</button>
+        </header>
+        <div class="modal-body news-modal-body">
+          <div class="news-modal-image-col">
+            <div id="news-modal-img" class="news-modal-img-box">
+              <span id="news-modal-badge" class="news-modal-badge">PROMOCJA</span>
+            </div>
+          </div>
+          <div class="news-modal-content-col custom-scrollbar">
+            <p id="news-modal-text" class="news-modal-text">Treść...</p>
+          </div>
+        </div>
+        <footer class="modal-actions">
+          <button id="btn-close-news-modal-bottom" class="kiosk-action-btn" data-log="wstecz" data-aoi="btn_modal_news_close" data-aoi-std="AOI_wstecz">← Wróć do listy</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MINIMALISTYCZNY PRZYCISK BADACZA (LUB SKRÓT CTRL + SHIFT + Y) -->
+    <div id="researcher-dock" data-log-ignore="true" style="position:fixed; bottom:8px; right:8px; z-index:9999; opacity:0.35;">
+      <button id="btn-export-events" data-log-ignore="true" title="Zakończ scenariusz i pobierz CSV (Ctrl+Shift+S)" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #999; background:#fff; color:#222; cursor:pointer;">
+        💾 S3 (<span id="log-count">0</span>)
+      </button>
+    </div>
+  </div>
+
+  <script src="js/stores-data.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

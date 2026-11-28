@@ -6,7 +6,7 @@
   <title>Infomat Galeria Handlowa - Test Eyetracker</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-interfejs="5" data-uczestnik="P01" data-wersja="A" data-kolejnosc="AB" data-scenariusz="S1">
   <div id="kiosk-app">
     <!-- PEŁNOEKRANOWY VIEWPORT MAPY -->
     <div id="map-viewport" data-aoi="map_container">
@@ -534,55 +534,11 @@
       </div>
     </div>
 
-    <!-- PŁYWAJĄCY PANEL DLA BADACZA (ZGODNY Z PUN_zdarzenia.csv) -->
-    <div id="researcher-dock" data-log-ignore="true">
-      <button id="btn-toggle-researcher" class="dock-btn" data-log-ignore="true">🔬 Logger PUN</button>
-      <div id="researcher-menu" class="dock-menu hidden" data-log-ignore="true">
-        <h4>Rejestrator PUN_zdarzenia</h4>
-
-        <div class="dock-form-grid">
-          <label>Interfejs:
-            <input type="number" id="cfg-interfejs" value="6" min="1" max="10" />
-          </label>
-          <label>Uczestnik:
-            <input type="text" id="cfg-uczestnik" value="P01" maxlength="3" />
-          </label>
-          <label>Wersja:
-            <select id="cfg-wersja">
-              <option value="A" selected>A</option>
-              <option value="B">B</option>
-            </select>
-          </label>
-          <label>Kolejność:
-            <select id="cfg-kolejnosc">
-              <option value="AB" selected>AB</option>
-              <option value="BA">BA</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="dock-scenario-controls">
-          <div class="dock-scenario-row">
-            <select id="cfg-scenariusz">
-              <option value="S1">Scenariusz S1</option>
-              <option value="S2">Scenariusz S2</option>
-              <option value="S3">Scenariusz S3</option>
-            </select>
-            <button id="btn-scenario-start" class="exp-btn" style="background:#2E7D32;color:#fff;">▶ Start</button>
-          </div>
-          <div class="dock-scenario-row" style="margin-top:6px;">
-            <button id="btn-scenario-end-ok" class="exp-btn">✓ Koniec (Sukces=1)</button>
-            <button id="btn-scenario-abort" class="exp-btn">⏹ Przerwij (Puste)</button>
-          </div>
-        </div>
-
-        <div class="dock-stats">
-          Zdarzeń: <strong id="log-count">0</strong> | Status: <strong id="log-scenario-status">Poza scenariuszem</strong>
-        </div>
-
-        <button id="btn-export-events" class="exp-btn">💾 Pobierz PUN_zdarzenia_*.csv</button>
-        <button id="btn-clear-events" class="exp-btn danger">🗑️ Nowa sesja / Wyczyść</button>
-      </div>
+    <!-- MINIMALISTYCZNY PRZYCISK BADACZA (LUB SKRÓT CTRL + SHIFT + Y) -->
+    <div id="researcher-dock" data-log-ignore="true" style="position:fixed; bottom:8px; right:8px; z-index:9999; opacity:0.35;">
+      <button id="btn-export-events" data-log-ignore="true" title="Zakończ scenariusz i pobierz CSV (Ctrl+Shift+S)" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #999; background:#fff; color:#222; cursor:pointer;">
+        💾 S1 (<span id="log-count">0</span>)
+      </button>
     </div>
   </div>
 
